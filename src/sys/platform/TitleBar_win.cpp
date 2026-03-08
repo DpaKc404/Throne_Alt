@@ -3,7 +3,7 @@
 // Enables Mica/Acrylic on Win11, flat fallback on Win10.
 // Provides native Snap Layout support via WM_NCHITTEST.
 
-#ifdef Q_OS_WIN
+#ifdef _WIN32
 
 #include "include/ui/core/TitleBar.hpp"
 #include "include/sys/windows/WinVersion.h"
@@ -180,4 +180,4 @@ void installSnapLayoutFilter(QWidget *window, TitleBar *titleBar) {
 }
 }
 
-#endif // Q_OS_WIN
+#endif // _WIN32

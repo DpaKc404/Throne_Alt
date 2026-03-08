@@ -2,8 +2,7 @@
 // TitleBar platform helpers — Linux implementation
 // Handles Wayland CSD, X11 frameless fallback.
 
-#ifndef Q_OS_WIN
-#ifndef Q_OS_MACOS
+#if !defined(_WIN32) && !defined(__APPLE__)
 
 #include "include/ui/core/TitleBar.hpp"
 
@@ -51,5 +50,4 @@ void configureLinuxCSD(QWidget *window) {
 
 }  // namespace Platform
 
-#endif // !Q_OS_MACOS
-#endif // !Q_OS_WIN
+#endif // !_WIN32 && !__APPLE__
