@@ -40,6 +40,10 @@ namespace Configs {
         return name;
     }
 
+    QString AbstractBean::DisplayPort() {
+        return QString::number(serverPort);
+    }
+
     QString AbstractBean::DisplayTypeAndName() {
         return QString("[%1] %2").arg(DisplayType(), DisplayName());
     }

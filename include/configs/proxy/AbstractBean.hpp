@@ -40,6 +40,8 @@ namespace Configs {
 
         [[nodiscard]] virtual QString DisplayName();
 
+        [[nodiscard]] virtual QString DisplayPort();
+
         virtual QString DisplayCoreType() { return software_core_name; };
 
         virtual QString DisplayType() { return {}; };
