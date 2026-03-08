@@ -77,4 +77,8 @@ bool isWayland();
 // Configure CSD-compatible window hints for Linux/Wayland.
 void configureLinuxCSD(QWidget *window);
 
+// Install native event filter for Windows 11 Snap Layouts.
+// Call after applyPlatformWindowEffects(). No-op on non-Windows.
+void installSnapLayoutFilter(QWidget *window, TitleBar *titleBar);
+
 }  // namespace Platform

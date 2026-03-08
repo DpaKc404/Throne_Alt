@@ -380,8 +380,19 @@ set(LUPDATE_OPTIONS
 qt_add_lupdate(Throne TS_FILES ${TS_FILES} OPTIONS ${LUPDATE_OPTIONS})
 qt_add_lrelease(Throne TS_FILES ${TS_FILES} QM_FILES_OUTPUT_VARIABLE QM_FILES)
 
-configure_file(res/translations/translations.qrc ${CMAKE_BINARY_DIR} COPYONLY)
-target_sources(Throne PRIVATE ${CMAKE_BINARY_DIR}/translations.qrc)
+# Deploy .qm files to lang/ next to the binary (NOT embedded in .qrc).
+# TranslationManager loads them at runtime from applicationDirPath()/lang/.
+set(LANG_OUTPUT_DIR "$<TARGET_FILE_DIR:Throne>/lang")
+add_custom_command(TARGET Throne POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${LANG_OUTPUT_DIR}"
+    COMMENT "[i18n] Creating lang/ output directory"
+)
+foreach(_qm_file ${QM_FILES})
+    add_custom_command(TARGET Throne POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_qm_file}" "${LANG_OUTPUT_DIR}"
+        COMMENT "[i18n] Deploying ${_qm_file} → lang/"
+    )
+endforeach()
 
 # Target Link
 

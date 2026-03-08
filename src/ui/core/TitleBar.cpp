@@ -115,13 +115,13 @@ void TitleBar::setCenterWidget(QWidget *w) {
 }
 
 void TitleBar::applyPlatformWindowEffects(QWidget *window) {
-#ifdef Q_OS_WIN
+#ifdef _WIN32
     if (Platform::isMicaSupported()) {
         Platform::enableMicaEffect(window);
     }
     // On Windows we use frameless hint; Snap Layouts handled via native event filter.
     window->setWindowFlags(window->windowFlags() | Qt::FramelessWindowHint);
-#elif defined(Q_OS_LINUX)
+#elif defined(__linux__)
     if (Platform::isWayland()) {
         Platform::configureLinuxCSD(window);
     } else {

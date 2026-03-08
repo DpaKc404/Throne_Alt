@@ -15,6 +15,8 @@
 #include <3rdparty/WinCommander.hpp>
 
 #include "include/global/Configs.hpp"
+#include "include/ui/core/TranslationManager.hpp"
+#include "include/sys/platform/SystemThemeWatcher.hpp"
 
 #include "include/ui/mainwindow_interface.h"
 
@@ -39,6 +41,8 @@ void signal_handler(int signum) {
 QTranslator* trans = nullptr;
 QTranslator* trans_qt = nullptr;
 
+// Legacy loadTranslate kept for backward compatibility (called if TranslationManager
+// cannot find external .qm files, e.g. first run before lang/ is populated).
 void loadTranslate(const QString& locale) {
     QT_TRANSLATE_NOOP("QPlatformTheme", "Cancel");
     QT_TRANSLATE_NOOP("QPlatformTheme", "Apply");
@@ -51,12 +55,14 @@ void loadTranslate(const QString& locale) {
     if (trans_qt != nullptr) {
         trans_qt->deleteLater();
     }
-    //
     trans = new QTranslator;
     trans_qt = new QTranslator;
     QLocale::setDefault(QLocale(locale));
-    //
-    if (trans->load(":/translations/" + locale + ".qm")) {
+    // Try external lang/ first (TranslationManager path), then fall back to qrc
+    const QString langDir = QCoreApplication::applicationDirPath() + QStringLiteral("/lang");
+    if (trans->load(langDir + "/" + locale + ".qm")) {
+        QCoreApplication::installTranslator(trans);
+    } else if (trans->load(":/translations/" + locale + ".qm")) {
         QCoreApplication::installTranslator(trans);
     }
 }
@@ -72,7 +78,6 @@ int main(int argc, char* argv[]) {
     enable_core_dumps();
 #endif
 
-    QApplication::setAttribute(Qt::AA_DontUseNativeDialogs);
     QApplication::setQuitOnLastWindowClosed(false);
     QApplication a(argc, argv);
 
@@ -212,7 +217,10 @@ int main(int argc, char* argv[]) {
         Configs::dataStore->shortcuts->Save();
     }
 
-    // Translate
+    // Translate — use TranslationManager for hot-swappable external translations
+    TranslationManager::instance()->initialize();
+    SystemThemeWatcher::instance()->start();
+
     QString locale;
     switch (Configs::dataStore->language) {
         case 1: // English
@@ -230,7 +238,10 @@ int main(int argc, char* argv[]) {
             locale = QLocale().name();
     }
     QGuiApplication::tr("QT_LAYOUT_DIRECTION");
-    loadTranslate(locale);
+    // Try TranslationManager first (external lang/), fall back to legacy
+    if (!locale.isEmpty() && !TranslationManager::instance()->switchLanguage(locale)) {
+        loadTranslate(locale);
+    }
 
     // Check if another instance is running
     QByteArray hashBytes = QCryptographicHash::hash(wd.absolutePath().toUtf8(), QCryptographicHash::Md5).toBase64(QByteArray::OmitTrailingEquals);

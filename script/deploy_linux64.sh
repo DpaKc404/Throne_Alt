@@ -17,6 +17,12 @@ mkdir -p $DEST
 #### copy binary ####
 cp $BUILD/Throne $DEST
 
+#### copy translations to lang/ ####
+if [ -d "$BUILD/lang" ]; then
+  mkdir -p $DEST/lang
+  cp $BUILD/lang/*.qm $DEST/lang/ 2>/dev/null || true
+fi
+
 #### copy Throne.png ####
 cp ./res/public/Throne.png $DEST
 

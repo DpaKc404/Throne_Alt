@@ -48,6 +48,10 @@ void configureLinuxCSD(QWidget *window) {
     // (similar to Acrylic). This is best-effort.
 }
 
+void installSnapLayoutFilter(QWidget *, TitleBar *) {
+    // No-op on Linux — Snap Layouts are a Windows 11 feature.
+}
+
 }  // namespace Platform
 
 #endif // !_WIN32 && !__APPLE__

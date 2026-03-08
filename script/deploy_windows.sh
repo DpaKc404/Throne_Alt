@@ -21,6 +21,12 @@ mkdir -p $DEST
 cp $BUILD/Throne.exe $DEST
 cp $BUILD/*pdb $DEST || true
 
+#### copy translations to lang/ ####
+if [ -d "$BUILD/lang" ]; then
+  mkdir -p $DEST/lang
+  cp $BUILD/lang/*.qm $DEST/lang/ 2>/dev/null || true
+fi
+
 cd download-artifact
 cd *$ARCH
 tar xvzf artifacts.tgz -C ../../

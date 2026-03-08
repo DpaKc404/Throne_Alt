@@ -28,7 +28,8 @@
 #define DWMWA_SYSTEMBACKDROP_TYPE 38
 #endif
 
-// DWM_SYSTEMBACKDROP_TYPE values
+// DWM_SYSTEMBACKDROP_TYPE values — guard against newer SDKs that already define these.
+#ifndef DWMSBT_MAINWINDOW
 enum {
     DWMSBT_AUTO = 0,
     DWMSBT_NONE = 1,
@@ -36,6 +37,7 @@ enum {
     DWMSBT_TRANSIENTWINDOW = 3, // Acrylic
     DWMSBT_TABBEDWINDOW = 4  // Tabbed Mica
 };
+#endif
 
 namespace Platform {
 
