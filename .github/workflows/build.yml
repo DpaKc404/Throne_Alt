@@ -40,8 +40,6 @@ jobs:
             cross_arch: amd64
           - cross_os: linux
             cross_arch: amd64
-          - cross_os: darwin
-            cross_arch: amd64
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
@@ -127,11 +125,6 @@ jobs:
             os_label: linux
             target: amd64
             compiler: gcc
-          # ── macOS amd64 ──
-          - platform: macos-latest
-            os_label: macos
-            target: x86_64
-            compiler: clang
       fail-fast: false
     runs-on: ${{ matrix.platform }}
     env:
@@ -163,8 +156,6 @@ jobs:
         run: |
           if [[ "$RUNNER_OS" == "Linux" ]]; then
             sudo apt-get update && sudo apt-get install -y ccache
-          elif [[ "$RUNNER_OS" == "macOS" ]]; then
-            brew install ccache
           elif [[ "$RUNNER_OS" == "Windows" ]]; then
             choco install ccache -y
           fi
@@ -242,24 +233,6 @@ jobs:
           cd ..
           ./script/deploy_linux64.sh
 
-      - name: Configure & Build (macOS)
-        shell: bash
-        if: matrix.platform == 'macos-latest'
-        run: |
-          mkdir -p build && cd build
-          curl -fLso srslist.h "https://raw.githubusercontent.com/throneproj/routeprofiles/rule-set/srslist.h"
-          cmake -GNinja \
-            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-            -DNKR_PACKAGE_MACOS=1 \
-            -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 \
-            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.target }} \
-            ..
-          ninja -j$(sysctl -n hw.ncpu)
-          cd ..
-          ./script/deploy_macos.sh ${{ matrix.target }}
-
       # ── NSIS installer (Windows only) ──
       - name: Build Windows Installer
         shell: cmd
@@ -331,13 +304,6 @@ jobs:
           zip -9 -r $version_standalone-windows64.zip Throne
           rm -rf Throne
           ####
-          mkdir Throne
-          mv macos-amd64/Throne.app Throne/Throne.app
-          mv Throne/Throne.app/Contents/MacOS/Throne.dSYM debug/$version_standalone-macos-amd64.dSYM
-          zip -9 --symlinks -r $version_standalone-macos-amd64.zip Throne
-          rm -rf macos-amd64
-          rm -rf Throne
-          ####
           zip -9 -r debug-symbols.zip debug
 
       - name: Upload debug symbols
@@ -349,7 +315,7 @@ jobs:
       - name: Clean staging
         run: |
           cd deployment
-          rm -rf linux-amd64 windows64 macos-amd64 *.pdb debug*
+          rm -rf linux-amd64 windows64 *.pdb debug*
 
       - name: Upload deployment artifact
         uses: actions/upload-artifact@v4.6.2

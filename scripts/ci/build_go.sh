@@ -8,10 +8,9 @@
 # Usage:
 #   GOOS=linux  ./scripts/ci/build_go.sh
 #   GOOS=windows ./scripts/ci/build_go.sh
-#   GOOS=darwin  ./scripts/ci/build_go.sh
 #
 # Environment variables (input):
-#   GOOS          — Target operating system (required: linux | windows | darwin)
+#   GOOS          — Target operating system (required: linux | windows)
 #   INPUT_VERSION — Release tag / version string (optional)
 #
 # Output:
@@ -30,14 +29,14 @@ echo "════════════════════════�
 export GOARCH="amd64"
 
 if [[ -z "${GOOS:-}" ]]; then
-    echo "ERROR: GOOS is not set. Must be one of: linux, windows, darwin"
+    echo "ERROR: GOOS is not set. Must be one of: linux, windows"
     exit 1
 fi
 
 case "${GOOS}" in
-    linux|windows|darwin) ;;
+    linux|windows) ;;
     *)
-        echo "ERROR: Unsupported GOOS='${GOOS}'. Must be one of: linux, windows, darwin"
+        echo "ERROR: Unsupported GOOS='${GOOS}'. Must be one of: linux, windows"
         exit 1
         ;;
 esac
@@ -70,9 +69,6 @@ case "${GOOS}" in
         curl -fLso "${DEST}/updater" \
             "https://github.com/throneproj/updater/releases/latest/download/updater-linux-amd64"
         chmod +x "${DEST}/updater"
-        ;;
-    darwin)
-        echo ">> No updater binary for macOS (handled by app bundle)."
         ;;
 esac
 

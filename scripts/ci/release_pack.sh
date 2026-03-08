@@ -17,7 +17,7 @@
 #
 # Expects:
 #   deployment/ directory already populated with extracted artifacts from
-#   earlier build jobs (linux-amd64/, windows64/, macos-amd64/).
+#   earlier build jobs (linux-amd64/, windows64/).
 # ═══════════════════════════════════════════════════════════════════════════════
 set -euo pipefail
 
@@ -85,26 +85,13 @@ else
     echo "WARN: windows64 directory not found, skipping."
 fi
 
-# ─── macOS amd64 archive ─────────────────────────────────────────────────────
-echo ""
-echo ">> Packing macOS amd64..."
-if [[ -d macos-amd64 ]]; then
-    mkdir Throne
-    mv macos-amd64/Throne.app Throne/Throne.app
-    mv Throne/Throne.app/Contents/MacOS/Throne.dSYM "debug/${version_standalone}-macos-amd64.dSYM" || true
-    zip -9 --symlinks -r "${version_standalone}-macos-amd64.zip" Throne
-    rm -rf macos-amd64 Throne
-else
-    echo "WARN: macos-amd64 directory not found, skipping."
-fi
-
 # ─── Debug symbols bundle ────────────────────────────────────────────────────
 echo ""
 echo ">> Packing debug symbols..."
 zip -9 -r debug-symbols.zip debug
 
 # ─── Cleanup staging ─────────────────────────────────────────────────────────
-rm -rf linux-amd64 windows64 macos-amd64 *.pdb debug*/*.pdb
+rm -rf linux-amd64 windows64 *.pdb debug*/*.pdb
 
 cd "${REPO_ROOT}"
 

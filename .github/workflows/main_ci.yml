@@ -8,7 +8,7 @@
 #
 # Jobs:
 #   1. lint          — Static analysis (cppcheck, clang-format, CMake syntax)
-#   2. build-go      — Go backend for linux/windows/darwin (all amd64)
+#   2. build-go      — Go backend for linux/windows (all amd64)
 #   3. build-cpp     — Qt 6 GUI for linux/windows (amd64 matrix)
 #   4. release       — Pack archives & publish via ghr
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -79,7 +79,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        goos: [linux, windows, darwin]
+        goos: [linux, windows]
     steps:
       - name: Checkout
         uses: actions/checkout@v4.2.2
