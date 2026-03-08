@@ -180,7 +180,7 @@ RouteItem::RouteItem(QWidget *parent, const std::shared_ptr<Configs::RoutingChai
 
     connect(ui->route_import_json, &QPushButton::clicked, this, [=,this] {
         auto w = new QDialog(this);
-        w->setWindowTitle("Import JSON Array");
+        w->setWindowTitle(tr("Import JSON Array"));
         w->setWindowModality(Qt::ApplicationModal);
 
         auto line = 0;

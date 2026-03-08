@@ -1861,7 +1861,7 @@ void MainWindow::display_qr_link(bool nkrFormat) {
                             im.setPixel(x + qr_padding, y + qr_padding, black);
                 show_qr(size());
             } catch (const std::exception &ex) {
-                QMessageBox::warning(nullptr, "error", ex.what());
+                QMessageBox::warning(nullptr, tr("Error"), QString::fromStdString(ex.what()));
             }
         }
 
@@ -1870,19 +1870,20 @@ void MainWindow::display_qr_link(bool nkrFormat) {
             link_nk = link_nk_;
             //
             setLayout(new QVBoxLayout);
-            setMinimumSize(256, 256);
+            const int qrSize = qRound(256 * screen()->devicePixelRatio());
+            setMinimumSize(qrSize, qrSize);
             QSizePolicy sizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
             sizePolicy.setHeightForWidth(true);
             setSizePolicy(sizePolicy);
             //
             l = new QLabel();
-            l->setMinimumSize(256, 256);
+            l->setMinimumSize(qrSize, qrSize);
             l->setMargin(6);
             l->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
             l->setScaledContents(true);
             layout()->addWidget(l);
             cb = new QCheckBox;
-            cb->setText("Neko Links");
+            cb->setText(tr("Neko Links"));
             layout()->addWidget(cb);
             l2 = new QPlainTextEdit();
             l2->setReadOnly(true);

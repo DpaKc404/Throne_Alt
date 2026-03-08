@@ -93,7 +93,8 @@ void TitleBar::setTitle(const QString &title) {
 }
 
 void TitleBar::setIcon(const QIcon &icon) {
-    m_iconLabel->setPixmap(icon.pixmap(20, 20));
+    const qreal dpr = m_iconLabel->devicePixelRatioF();
+    m_iconLabel->setPixmap(icon.pixmap(QSize(20, 20) * dpr));
 }
 
 void TitleBar::setTitleBarVisible(bool visible) {

@@ -29,19 +29,19 @@ EditAdvanced::EditAdvanced(QWidget *parent, const std::shared_ptr<Configs::Proxy
         ui->client_cert->setEnabled(false);
         ui->client_key->setEnabled(false);
         if (!tlsObj->ech->config.isEmpty()) {
-            ui->ech_config->setText("Already set");
+            ui->ech_config->setText(tr("Already set"));
             CACHE.echConfig = tlsObj->ech->config;
         }
         if (!tlsObj->certificate_public_key_sha256.isEmpty()) {
-            ui->cert_sha256->setText("Already set");
+            ui->cert_sha256->setText(tr("Already set"));
             CACHE.certSha256 = tlsObj->certificate_public_key_sha256;
         }
         if (!tlsObj->client_certificate.isEmpty()) {
-            ui->client_cert->setText("Already set");
+            ui->client_cert->setText(tr("Already set"));
             CACHE.clientCert = tlsObj->client_certificate;
         }
         if (!tlsObj->client_key.isEmpty()) {
-            ui->client_key->setText("Already set");
+            ui->client_key->setText(tr("Already set"));
             CACHE.clientKey = tlsObj->client_key;
         }
     } else {
@@ -83,9 +83,9 @@ void EditAdvanced::on_ech_config_clicked() {
     if (ok) {
         CACHE.echConfig = txt.split("\n", Qt::SkipEmptyParts);
         if (!CACHE.echConfig.isEmpty()) {
-            ui->ech_config->setText("Already set");
+            ui->ech_config->setText(tr("Already set"));
         } else {
-            ui->ech_config->setText("Not Set");
+            ui->ech_config->setText(tr("Not Set"));
         }
     }
 }
@@ -96,9 +96,9 @@ void EditAdvanced::on_client_cert_clicked() {
     if (ok) {
         CACHE.clientCert = txt.split("\n", Qt::SkipEmptyParts);
         if (!CACHE.echConfig.isEmpty()) {
-            ui->client_cert->setText("Already set");
+            ui->client_cert->setText(tr("Already set"));
         } else {
-            ui->client_cert->setText("Not Set");
+            ui->client_cert->setText(tr("Not Set"));
         }
     }
 }
@@ -109,9 +109,9 @@ void EditAdvanced::on_client_key_clicked() {
     if (ok) {
         CACHE.clientKey = txt.split("\n", Qt::SkipEmptyParts);
         if (!CACHE.echConfig.isEmpty()) {
-            ui->client_key->setText("Already set");
+            ui->client_key->setText(tr("Already set"));
         } else {
-            ui->client_key->setText("Not Set");
+            ui->client_key->setText(tr("Not Set"));
         }
     }
 }
@@ -122,9 +122,9 @@ void EditAdvanced::on_cert_sha256_clicked() {
     if (ok) {
         CACHE.certSha256 = txt.split("\n", Qt::SkipEmptyParts);
         if (!CACHE.echConfig.isEmpty()) {
-            ui->cert_sha256->setText("Already set");
+            ui->cert_sha256->setText(tr("Already set"));
         } else {
-            ui->cert_sha256->setText("Not Set");
+            ui->cert_sha256->setText(tr("Not Set"));
         }
     }
 }

@@ -31,7 +31,7 @@ on:
 
 # ─── Global environment ──────────────────────────────────────────────────────
 env:
-  QT_VERSION: "6.10.1"
+  QT_VERSION: "6.10.2"
   GO_VERSION: "1.25.5"
   CCACHE_MAXSIZE: "500M"
   CCACHE_COMPRESS: "true"

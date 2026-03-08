@@ -171,7 +171,7 @@ int main(int argc, char* argv[]) {
         dir_success &= dir.mkdir(ROUTES_PREFIX_NAME);
     }
     if (!dir_success) {
-        QMessageBox::critical(nullptr, "Error", "No permission to write " + dir.absolutePath());
+        QMessageBox::critical(nullptr, QObject::tr("Error"), QObject::tr("No permission to write %1").arg(dir.absolutePath()));
         return 1;
     }
 

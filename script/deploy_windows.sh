@@ -31,3 +31,11 @@ cd download-artifact
 cd *$ARCH
 tar xvzf artifacts.tgz -C ../../
 cd ../..
+
+#### deploy Qt runtime DLLs ####
+pushd $DEST
+windeployqt Throne.exe --no-translations --no-system-d3d-compiler --no-opengl-sw --no-svg --verbose 2
+popd
+
+# Remove unnecessary DX shader compiler DLLs
+rm -f $DEST/dxcompiler.dll $DEST/dxil.dll
