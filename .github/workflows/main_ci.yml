@@ -49,6 +49,7 @@ jobs:
   lint:
     name: "Lint (cppcheck + clang-format)"
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -73,6 +74,7 @@ jobs:
   build:
     name: "Build (${{ matrix.os_label }}/amd64)"
     needs: [lint]
+    timeout-minutes: 45
     permissions:
       contents: read
     strategy:
@@ -93,7 +95,6 @@ jobs:
             compiler: msvc
     runs-on: ${{ matrix.platform }}
     env:
-      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
       INPUT_VERSION: ${{ github.event.inputs.tag }}
     steps:
       - name: Checkout
@@ -105,18 +106,8 @@ jobs:
       #   Stage A — Go backend build
       # ══════════════════════════════════════════════════════════════════════
 
-      # ── Go build cache ──
-      - name: Cache Go modules & build
-        uses: actions/cache@v4.2.3
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-${{ matrix.cross_os }}-${{ matrix.cross_arch }}-${{ env.GO_VERSION }}-${{ hashFiles('core/server/go.sum') }}
-          restore-keys: |
-            go-${{ matrix.cross_os }}-${{ matrix.cross_arch }}-${{ env.GO_VERSION }}-
-
-      # ── Artifact-level cache (skip Go rebuild if nothing changed) ──
+      # ── Go artifact cache (skip rebuild if nothing changed) ──
+      # Module & build caches are handled by actions/setup-go internally.
       - name: Cache Go artifacts
         id: cache-go-artifacts
         uses: actions/cache@v4.2.3
@@ -163,10 +154,10 @@ jobs:
           if [[ "${{ steps.cache-go-artifacts.outputs.cache-hit }}" == "true" ]]; then
             tar xzf go-artifacts.tgz
           fi
-          # Simulate download-artifact layout expected by deploy scripts
+          # Provide Go artifacts in the layout expected by deploy scripts
           ART="download-artifact/Throne-go-${{ matrix.cross_os }}-${{ matrix.cross_arch }}"
           mkdir -p "$ART"
-          tar czf "$ART/artifacts.tgz" ./deployment
+          cp go-artifacts.tgz "$ART/artifacts.tgz"
 
       # ══════════════════════════════════════════════════════════════════════
       #   Stage B — C++ GUI build
@@ -261,11 +252,11 @@ jobs:
       # ── NSIS installer (Windows only) ──
       - name: Build Windows Installer
         if: matrix.os_label == 'windows'
-        shell: cmd
+        shell: bash
         run: |
-          choco install nsis
-          cp .\script\windows_installer.nsi .
-          "C:\Program Files (x86)\NSIS\makensis.exe" windows_installer.nsi
+          choco install nsis -y
+          cp ./script/windows_installer.nsi .
+          "/c/Program Files (x86)/NSIS/makensis.exe" windows_installer.nsi
           cp ThroneSetup.exe deployment/
 
       # ── ccache stats ──
@@ -289,6 +280,7 @@ jobs:
     name: "Pack & Publish (amd64)"
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [build]
     permissions:
       contents: write

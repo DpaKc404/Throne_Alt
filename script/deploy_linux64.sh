@@ -25,9 +25,9 @@ cd *linux-$ARCH
 tar xvzf artifacts.tgz -C ../../
 cd ../..
 
-sudo add-apt-repository universe
-sudo apt install libfuse2
-sudo apt install patchelf
+sudo add-apt-repository -y universe
+sudo apt-get update -qq
+sudo apt-get install -y -qq libfuse2 patchelf
 wget https://github.com/linuxdeploy/linuxdeploy/releases/download/1-alpha-20250213-2/linuxdeploy-$ARCH1.AppImage
 wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/1-alpha-20250213-1/linuxdeploy-plugin-qt-$ARCH1.AppImage
 chmod +x linuxdeploy-$ARCH1.AppImage linuxdeploy-plugin-qt-$ARCH1.AppImage
