@@ -226,10 +226,6 @@
             <translation>Прослушиваемый порт:</translation>
         </message>
         <message>
-            <source>Loglevel</source>
-            <translation>Уровнь журнала</translation>
-        </message>
-        <message>
             <source>Xray Log level</source>
             <translation>Уровнь журнала Xray</translation>
         </message>

@@ -37,7 +37,7 @@ bool ProxyStateManager::setMode(ProxyMode target) {
 
     auto previousMode = m_mode.load(std::memory_order_acquire);
 
-    QtConcurrent::run([this, target, previousMode] {
+    (void) QtConcurrent::run([this, target, previousMode] {
         bool success = false;
 
         switch (target) {

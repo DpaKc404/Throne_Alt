@@ -21,7 +21,7 @@ NetworkLeakGuard::NetworkLeakGuard(QObject *parent) : QObject(parent) {}
 // Full Audit — runs routing, DNS, and IPv6 checks off-thread
 // ═══════════════════════════════════════════════════════════════════════════════
 void NetworkLeakGuard::runFullAudit() {
-    QtConcurrent::run([this] {
+    (void) QtConcurrent::run([this] {
         LeakAuditResult combined;
 
         auto routeResult = auditRoutingTable();

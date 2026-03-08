@@ -39,7 +39,7 @@ CoreVersionInfo CoreVersionParser::cachedInfo() const {
 // Spawns the core binary with "--version" in a thread-pool worker.
 // Parses stdout with regex, updates cache, emits on main thread.
 void CoreVersionParser::requestVersions() {
-    QtConcurrent::run([this] {
+    (void) QtConcurrent::run([this] {
         CoreVersionInfo info;
 
         auto corePath = Configs::FindCoreRealPath();

@@ -26,7 +26,7 @@ void AsyncBackendBridge::runAsync(Func &&func) {
 
 void AsyncBackendBridge::startCore(const libcore::LoadConfigReq &req) {
     auto reqCopy = req; // capture by value for thread safety
-    QtConcurrent::run(QThreadPool::globalInstance(), [this, reqCopy]() {
+    (void) QtConcurrent::run(QThreadPool::globalInstance(), [this, reqCopy]() {
         bool rpcOK = false;
         QString err = API::defaultClient->Start(&rpcOK, reqCopy);
         if (!rpcOK) { emit backendError(QStringLiteral("startCore"), QStringLiteral("RPC connection failed")); return; }
@@ -38,7 +38,7 @@ void AsyncBackendBridge::startCore(const libcore::LoadConfigReq &req) {
 }
 
 void AsyncBackendBridge::stopCore() {
-    QtConcurrent::run(QThreadPool::globalInstance(), [this]() {
+    (void) QtConcurrent::run(QThreadPool::globalInstance(), [this]() {
         bool rpcOK = false;
         QString err = API::defaultClient->Stop(&rpcOK);
         if (!rpcOK) { emit backendError(QStringLiteral("stopCore"), QStringLiteral("RPC connection failed")); return; }
@@ -54,14 +54,14 @@ void AsyncBackendBridge::stopCore() {
 // ---------------------------------------------------------------------------
 
 void AsyncBackendBridge::queryStats() {
-    QtConcurrent::run(QThreadPool::globalInstance(), [this]() {
+    (void) QtConcurrent::run(QThreadPool::globalInstance(), [this]() {
         auto resp = API::defaultClient->QueryStats();
         emit statsReady(resp);
     });
 }
 
 void AsyncBackendBridge::queryConnections() {
-    QtConcurrent::run(QThreadPool::globalInstance(), [this]() {
+    (void) QtConcurrent::run(QThreadPool::globalInstance(), [this]() {
         bool rpcOK = false;
         auto resp = API::defaultClient->ListConnections(&rpcOK);
         if (rpcOK) emit connectionsReady(resp);
@@ -74,7 +74,7 @@ void AsyncBackendBridge::queryConnections() {
 
 void AsyncBackendBridge::runLatencyTest(const libcore::TestReq &req) {
     auto reqCopy = req;
-    QtConcurrent::run(QThreadPool::globalInstance(), [this, reqCopy]() {
+    (void) QtConcurrent::run(QThreadPool::globalInstance(), [this, reqCopy]() {
         bool rpcOK = false;
         auto resp = API::defaultClient->Test(&rpcOK, reqCopy);
         if (rpcOK) emit latencyTestDone(resp);
@@ -82,7 +82,7 @@ void AsyncBackendBridge::runLatencyTest(const libcore::TestReq &req) {
 }
 
 void AsyncBackendBridge::stopTests() {
-    QtConcurrent::run(QThreadPool::globalInstance(), [this]() {
+    (void) QtConcurrent::run(QThreadPool::globalInstance(), [this]() {
         bool rpcOK = false;
         API::defaultClient->StopTests(&rpcOK);
     });
@@ -90,7 +90,7 @@ void AsyncBackendBridge::stopTests() {
 
 void AsyncBackendBridge::runSpeedTest(const libcore::SpeedTestRequest &req) {
     auto reqCopy = req;
-    QtConcurrent::run(QThreadPool::globalInstance(), [this, reqCopy]() {
+    (void) QtConcurrent::run(QThreadPool::globalInstance(), [this, reqCopy]() {
         bool rpcOK = false;
         auto resp = API::defaultClient->SpeedTest(&rpcOK, reqCopy);
         if (rpcOK) emit speedTestDone(resp);
@@ -98,7 +98,7 @@ void AsyncBackendBridge::runSpeedTest(const libcore::SpeedTestRequest &req) {
 }
 
 void AsyncBackendBridge::querySpeedTestResults() {
-    QtConcurrent::run(QThreadPool::globalInstance(), [this]() {
+    (void) QtConcurrent::run(QThreadPool::globalInstance(), [this]() {
         bool rpcOK = false;
         auto resp = API::defaultClient->QueryCurrentSpeedTests(&rpcOK);
         if (rpcOK) emit speedTestProgress(resp);
@@ -111,7 +111,7 @@ void AsyncBackendBridge::querySpeedTestResults() {
 
 void AsyncBackendBridge::checkConfig(const QString &config) {
     QString cfgCopy = config;
-    QtConcurrent::run(QThreadPool::globalInstance(), [this, cfgCopy]() {
+    (void) QtConcurrent::run(QThreadPool::globalInstance(), [this, cfgCopy]() {
         bool rpcOK = false;
         QString err = API::defaultClient->CheckConfig(&rpcOK, cfgCopy);
         if (!rpcOK) { emit backendError(QStringLiteral("checkConfig"), QStringLiteral("RPC connection failed")); return; }
@@ -124,7 +124,7 @@ void AsyncBackendBridge::checkConfig(const QString &config) {
 // ---------------------------------------------------------------------------
 
 void AsyncBackendBridge::setSystemDNS(bool clear) {
-    QtConcurrent::run(QThreadPool::globalInstance(), [this, clear]() {
+    (void) QtConcurrent::run(QThreadPool::globalInstance(), [this, clear]() {
         bool rpcOK = false;
         QString err = API::defaultClient->SetSystemDNS(&rpcOK, clear);
         if (!rpcOK) { emit backendError(QStringLiteral("setSystemDNS"), QStringLiteral("RPC connection failed")); return; }
