@@ -28,16 +28,15 @@
 #define DWMWA_SYSTEMBACKDROP_TYPE 38
 #endif
 
-// DWM_SYSTEMBACKDROP_TYPE values — guard against newer SDKs that already define these.
-// DWMSBT_* are enum values (not macros), so #ifndef does not work; use __has_include
-// to detect the Windows 11 SDK that ships them in dwmapi.h.
-#if !defined(__has_include) || !__has_include(<uxtheme.h>) || (defined(NTDDI_VERSION) && NTDDI_VERSION < 0x0A00000C)
-static constexpr int DWMSBT_AUTO             = 0;
-static constexpr int DWMSBT_NONE             = 1;
-static constexpr int DWMSBT_MAINWINDOW       = 2;   // Mica
-static constexpr int DWMSBT_TRANSIENTWINDOW  = 3;   // Acrylic
-static constexpr int DWMSBT_TABBEDWINDOW     = 4;   // Tabbed Mica
-#endif
+// DWM_SYSTEMBACKDROP_TYPE numeric values — avoid redefinition on newer SDKs
+// that already ship these as enum constants in dwmapi.h.
+namespace {
+    constexpr int kDwmSbtAuto            = 0;
+    constexpr int kDwmSbtNone            = 1;
+    constexpr int kDwmSbtMainWindow      = 2;   // Mica
+    constexpr int kDwmSbtTransientWindow = 3;   // Acrylic
+    constexpr int kDwmSbtTabbedWindow    = 4;   // Tabbed Mica
+}
 
 namespace Platform {
 
@@ -61,7 +60,7 @@ void enableMicaEffect(QWidget *window) {
     ::DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDark, sizeof(useDark));
 
     // Set Mica backdrop (Windows 11 22H2+ with DWMWA_SYSTEMBACKDROP_TYPE).
-    int backdropType = DWMSBT_MAINWINDOW; // Mica
+    int backdropType = kDwmSbtMainWindow; // Mica
     HRESULT hr = ::DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdropType, sizeof(backdropType));
 
     if (FAILED(hr)) {
