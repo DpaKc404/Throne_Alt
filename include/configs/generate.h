@@ -116,7 +116,7 @@ namespace Configs
             }
 
             int index = 0;
-            foreach(QString item, list)
+            for (const QString &item : list)
             {
                 if(!item.isEmpty())
                 {

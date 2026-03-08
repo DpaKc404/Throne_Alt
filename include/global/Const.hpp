@@ -21,6 +21,7 @@ namespace Configs {
     namespace CoreType {
         enum CoreType {
             SING_BOX,
+            XRAY_CORE,
         };
     }
 

@@ -29,6 +29,10 @@ namespace Configs_network {
             p.setType(QNetworkProxy::HttpProxy);
             p.setHostName(Configs::dataStore->inbound_address == "::" ? "127.0.0.1" : Configs::dataStore->inbound_address);
             p.setPort(Configs::dataStore->inbound_socks_port);
+            if (Configs::dataStore->inbound_auth) {
+                p.setUser(Configs::dataStore->inbound_username);
+                p.setPassword(Configs::dataStore->inbound_password);
+            }
             accessManager.setProxy(p);
         }
         // Set attribute
@@ -119,6 +123,10 @@ namespace Configs_network {
             p.setType(QNetworkProxy::HttpProxy);
             p.setHostName(Configs::dataStore->inbound_address == "::" ? "127.0.0.1" : Configs::dataStore->inbound_address);
             p.setPort(Configs::dataStore->inbound_socks_port);
+            if (Configs::dataStore->inbound_auth) {
+                p.setUser(Configs::dataStore->inbound_username);
+                p.setPassword(Configs::dataStore->inbound_password);
+            }
             accessManager.setProxy(p);
         }
         if (Configs::dataStore->net_insecure) {

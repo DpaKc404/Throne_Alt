@@ -147,6 +147,33 @@
             </item>
            </widget>
           </item>
+          <item row="3" column="0">
+           <widget class="QCheckBox" name="inbound_auth">
+            <property name="toolTip">
+             <string>Require username/password for inbound connections. Protects against unauthorized access when listening on LAN.</string>
+            </property>
+            <property name="text">
+             <string>Inbound Auth</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QLineEdit" name="inbound_username">
+            <property name="placeholderText">
+             <string>Username</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2" colspan="4">
+           <widget class="QLineEdit" name="inbound_password">
+            <property name="placeholderText">
+             <string>Password</string>
+            </property>
+            <property name="echoMode">
+             <enum>QLineEdit::Password</enum>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>

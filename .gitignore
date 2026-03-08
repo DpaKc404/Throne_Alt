@@ -86,4 +86,5 @@ CMakeLists.txt.user*
 .vs
 out
 /libs
-srslist.haqtinstall.log
+srslist.h
+aqtinstall.log

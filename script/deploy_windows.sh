@@ -27,15 +27,35 @@ if [ -d "$BUILD/lang" ]; then
   cp $BUILD/lang/*.qm $DEST/lang/ 2>/dev/null || true
 fi
 
+#### extract Go artifacts ####
 cd download-artifact
 cd *$ARCH
 tar xvzf artifacts.tgz -C ../../
 cd ../..
 
-#### deploy Qt runtime DLLs ####
-pushd $DEST
-windeployqt Throne.exe --no-translations --no-system-d3d-compiler --no-opengl-sw --no-svg --verbose 2
-popd
+#### deploy Qt runtime DLLs (shared Qt only) ####
+# Check if Throne.exe has Qt6Core.dll dependency (shared build)
+if command -v dumpbin &>/dev/null; then
+  HAS_QT_DLL=$(dumpbin /dependents $DEST/Throne.exe 2>/dev/null | grep -ci "Qt6" || true)
+elif command -v objdump &>/dev/null; then
+  HAS_QT_DLL=$(objdump -p $DEST/Throne.exe 2>/dev/null | grep -ci "Qt6" || true)
+else
+  # Assume shared build — run windeployqt just in case
+  HAS_QT_DLL=1
+fi
 
-# Remove unnecessary DX shader compiler DLLs
-rm -f $DEST/dxcompiler.dll $DEST/dxil.dll
+if [[ "$HAS_QT_DLL" -gt 0 ]]; then
+  echo "=== Shared Qt build detected, running windeployqt ==="
+  pushd $DEST
+  windeployqt Throne.exe \
+    --no-translations \
+    --no-system-d3d-compiler \
+    --no-opengl-sw \
+    --no-svg \
+    --verbose 2
+  popd
+  # Remove unnecessary DX shader compiler DLLs
+  rm -f $DEST/dxcompiler.dll $DEST/dxil.dll
+else
+  echo "=== Static Qt build detected — no DLL deployment needed ==="
+fi

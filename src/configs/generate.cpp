@@ -430,25 +430,7 @@ namespace Configs {
             }
         }
 
-        // FakeIP
-        if (dataStore->fake_dns) {
-            servers += QJsonObject{
-                    {"tag", "dns-fake"},
-                    {"type", "fakeip"},
-                    {"inet4_range", "198.18.0.0/15"},
-                    {"inet6_range", "fc00::/18"},
-                };
-            rules += QJsonObject{
-                    {"query_type", QJsonArray{
-                        "A",
-                        "AAAA"
-                    }},
-                 {"action", "route"},
-                 {"server", "dns-fake"}
-            };
-            independentCache = true;
-        }
-
+        // Direct DNS rules MUST come before FakeIP to avoid giving fake IPs to direct domains
         if (dnsDeps->needDirectDnsRules) {
             rules += QJsonObject{
                     {"rule_set", dnsDeps->directRuleSets},
@@ -459,6 +441,31 @@ namespace Configs {
                     {"action", "route"},
                     {"server", "dns-direct"},
                 };
+        }
+
+        // FakeIP — only after direct rules, so direct domains get real IPs
+        if (dataStore->fake_dns) {
+            servers += QJsonObject{
+                    {"tag", "dns-fake"},
+                    {"type", "fakeip"},
+                    {"inet4_range", "198.18.0.0/15"},
+                    {"inet6_range", "fc00::/18"},
+                };
+            // Exclude private/LAN queries from FakeIP (P2P, BitTorrent, local discovery)
+            rules += QJsonObject{
+                    {"ip_is_private", true},
+                    {"action", "route"},
+                    {"server", "dns-direct"},
+                };
+            rules += QJsonObject{
+                    {"query_type", QJsonArray{
+                        "A",
+                        "AAAA"
+                    }},
+                 {"action", "route"},
+                 {"server", "dns-fake"}
+            };
+            independentCache = true;
         }
 
         // Local: avoid "underlying" on Linux+TUN when no override set (prevents "No default interface" at startup)
@@ -491,6 +498,15 @@ namespace Configs {
             inboundObj["type"] = "mixed";
             inboundObj["listen"] = dataStore->inbound_address;
             inboundObj["listen_port"] = dataStore->inbound_socks_port;
+            // Authentication — protects against external scanners abusing open ports
+            if (dataStore->inbound_auth
+                && !dataStore->inbound_username.isEmpty()
+                && !dataStore->inbound_password.isEmpty()) {
+                inboundObj["users"] = QJsonArray{QJsonObject{
+                    {"username", dataStore->inbound_username},
+                    {"password", dataStore->inbound_password},
+                }};
+            }
             inbounds += inboundObj;
         }
 
@@ -728,6 +744,15 @@ namespace Configs {
             {"process_path", FindCoreRealPath()},
             {"outbound", "direct"},
         });
+
+        // Route BitTorrent/P2P direct to avoid proxy overhead and IP leaks
+        if (dataStore->routing->sniffing_mode != SniffingMode::DISABLE) {
+            routeRules.prepend(QJsonObject{
+                {"protocol", "bittorrent"},
+                {"action", "route"},
+                {"outbound", "direct"},
+            });
+        }
 
         // rulesets
         auto ruleSetArray = QJsonArray();

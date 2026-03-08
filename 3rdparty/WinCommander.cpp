@@ -55,7 +55,7 @@ uint WinCommander::runProcessElevated(const QString &path,
     QString params;
     HWND hwnd = NULL;
     LPCTSTR pszPath = (LPCTSTR)path.utf16();
-    foreach(QString item, parameters)
+    for (const QString &item : parameters)
         params += "\"" + item + "\" ";
 
     LPCTSTR pszParameters = (LPCTSTR)params.utf16();

@@ -36,6 +36,16 @@ DialogBasicSettings::DialogBasicSettings(QWidget *parent)
     CACHE.custom_inbound = Configs::dataStore->custom_inbound;
     D_LOAD_INT(inbound_socks_port)
     ui->random_listen_port->setChecked(Configs::dataStore->random_inbound_port);
+    // Inbound authentication
+    ui->inbound_auth->setChecked(Configs::dataStore->inbound_auth);
+    ui->inbound_username->setText(Configs::dataStore->inbound_username);
+    ui->inbound_password->setText(Configs::dataStore->inbound_password);
+    ui->inbound_username->setEnabled(Configs::dataStore->inbound_auth);
+    ui->inbound_password->setEnabled(Configs::dataStore->inbound_auth);
+    connect(ui->inbound_auth, &QCheckBox::toggled, this, [this](bool checked) {
+        ui->inbound_username->setEnabled(checked);
+        ui->inbound_password->setEnabled(checked);
+    });
     D_LOAD_INT(test_concurrent)
     D_LOAD_STRING(test_latency_url)
     D_LOAD_BOOL(disable_tray)
@@ -219,6 +229,10 @@ void DialogBasicSettings::accept() {
         needChoosePort = true;
     }
     Configs::dataStore->random_inbound_port = ui->random_listen_port->isChecked();
+    // Inbound authentication
+    Configs::dataStore->inbound_auth = ui->inbound_auth->isChecked();
+    Configs::dataStore->inbound_username = ui->inbound_username->text();
+    Configs::dataStore->inbound_password = ui->inbound_password->text();
     D_SAVE_INT(test_concurrent)
     D_SAVE_STRING(test_latency_url)
     D_SAVE_BOOL(disable_tray)

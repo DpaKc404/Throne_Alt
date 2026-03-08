@@ -136,6 +136,9 @@ namespace Configs {
         int inbound_socks_port = 2080; // Mixed, actually
         bool random_inbound_port = false;
         QString custom_inbound = "{\"inbounds\": []}";
+        bool inbound_auth = false;
+        QString inbound_username = "";
+        QString inbound_password = "";
 
         // Routing
         QString custom_route_global = "{\"rules\": []}";

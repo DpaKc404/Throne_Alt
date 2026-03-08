@@ -25,6 +25,15 @@ if (Qt6_VERSION VERSION_LESS "6.5.0")
     message(WARNING "Throne targets Qt 6.5+. Detected Qt ${Qt6_VERSION} — some features may be unavailable.")
 endif()
 
+# Detect static Qt for single-executable builds
+get_target_property(_qt_type Qt6::Core TYPE)
+if (_qt_type STREQUAL "STATIC_LIBRARY")
+    set(QT_STATIC ON)
+    message(STATUS "[Throne] Static Qt detected — single executable mode")
+else()
+    set(QT_STATIC OFF)
+endif()
+
 if (NKR_CROSS)
     set_property(TARGET Qt6::moc PROPERTY IMPORTED_LOCATION /usr/bin/moc)
     set_property(TARGET Qt6::uic PROPERTY IMPORTED_LOCATION /usr/bin/uic)
@@ -114,6 +123,9 @@ set(PROJECT_SOURCES
         src/sys/ProxyStateManager.cpp
         include/sys/NetworkLeakGuard.hpp
         src/sys/NetworkLeakGuard.cpp
+
+        include/sys/CoreManager.hpp
+        src/sys/CoreManager.cpp
 
         include/configs/NextGenFeatures.hpp
         include/global/MemorySafety.hpp
@@ -397,5 +409,19 @@ target_link_libraries(Throne PRIVATE
         ${NKR_EXTERNAL_TARGETS}
         ${PLATFORM_LIBRARIES}
 )
+
+# Static Qt: import all required plugins so they're linked into the single binary
+if (QT_STATIC)
+    qt_import_plugins(Throne
+        INCLUDE_BY_TYPE platforms Qt6::QWindowsIntegrationPlugin
+        INCLUDE_BY_TYPE styles Qt6::QModernWindowsStylePlugin
+        EXCLUDE_BY_TYPE imageformats
+    )
+    if (WIN32)
+        target_link_libraries(Throne PRIVATE
+            ws2_32 crypt32 winmm dwmapi uxtheme version imm32
+        )
+    endif()
+endif()
 
 qt_finalize_executable(Throne)

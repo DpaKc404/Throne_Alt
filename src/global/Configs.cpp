@@ -266,6 +266,9 @@ namespace Configs {
         _add(new configItem("test_concurrent", &test_concurrent, itemType::integer));
         _add(new configItem("theme", &theme, itemType::string));
         _add(new configItem("custom_inbound", &custom_inbound, itemType::string));
+        _add(new configItem("inbound_auth", &inbound_auth, itemType::boolean));
+        _add(new configItem("inbound_username", &inbound_username, itemType::string));
+        _add(new configItem("inbound_password", &inbound_password, itemType::string));
         _add(new configItem("custom_route", &custom_route_global, itemType::string));
         _add(new configItem("net_use_proxy", &net_use_proxy, itemType::boolean));
         _add(new configItem("remember_id", &remember_id, itemType::integer));
