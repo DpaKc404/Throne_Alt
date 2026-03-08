@@ -47,6 +47,7 @@ message("[CMAKE_FIND_ROOT_PATH] ${CMAKE_FIND_ROOT_PATH}")
 include("cmake/print.cmake")
 include("cmake/nkr.cmake")
 include("cmake/QHotkey.cmake")
+include("cmake/gui_modern.cmake")
 
 find_package(Threads)
 
@@ -63,6 +64,7 @@ list(APPEND NKR_EXTERNAL_TARGETS qhotkey)
 # Sources
 set(PROJECT_SOURCES
         ${PLATFORM_SOURCES}
+        ${GUI_MODERN_SOURCES}
 
         src/main.cpp
         src/global/Configs.cpp
@@ -360,7 +362,7 @@ target_sources(Throne PRIVATE ${CMAKE_BINARY_DIR}/translations.qrc)
 # Target Link
 
 target_link_libraries(Throne PRIVATE
-        Qt6::Widgets Qt6::Network Qt6::DBus
+        Qt6::Widgets Qt6::Network Qt6::DBus Qt6::Concurrent
         Threads::Threads
         ${NKR_EXTERNAL_TARGETS}
         ${PLATFORM_LIBRARIES}
