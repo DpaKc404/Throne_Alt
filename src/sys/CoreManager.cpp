@@ -2,9 +2,13 @@
 #include "include/api/CoreVersionParser.hpp"
 #include "include/global/Configs.hpp"
 #include "include/global/Utils.hpp"
+#include "include/global/HTTPRequestHelper.hpp"
 
 #include <QApplication>
 #include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 #include <QMutex>
 #include <QMutexLocker>
 #include <QtConcurrent>
@@ -92,7 +96,7 @@ namespace Configs_sys {
                 return;
             }
 
-            auto doc = QJsonDocument::fromJson(resp.content.toUtf8());
+            auto doc = QJsonDocument::fromJson(resp.data);
             if (doc.isNull()) {
                 QMetaObject::invokeMethod(this, [cb] {
                     cb(false, "Invalid response from GitHub API");
@@ -124,8 +128,9 @@ namespace Configs_sys {
             auto dlError = Configs_network::NetworkRequestHelper::DownloadAsset(downloadUrl, tempPath);
             if (!dlError.isEmpty()) {
                 QFile::remove(tempPath);
-                QMetaObject::invokeMethod(this, [cb, dlError] {
-                    cb(false, "Download failed: " + dlError);
+                QString dlErr = dlError;
+                QMetaObject::invokeMethod(this, [cb, dlErr] {
+                    cb(false, "Download failed: " + dlErr);
                 });
                 return;
             }
