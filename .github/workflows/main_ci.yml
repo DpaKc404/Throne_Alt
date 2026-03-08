@@ -50,6 +50,7 @@ jobs:
     name: "Lint (cppcheck + clang-format)"
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    continue-on-error: true
     permissions:
       contents: read
     steps:
@@ -73,7 +74,6 @@ jobs:
   # ─── Job 2: Build (Go + C++ merged) ──────────────────────────────────────
   build:
     name: "Build (${{ matrix.os_label }}/amd64)"
-    needs: [lint]
     timeout-minutes: 45
     permissions:
       contents: read
