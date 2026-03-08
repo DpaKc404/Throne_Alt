@@ -1,5 +1,8 @@
 #include <csignal>
 
+// Compile-time architecture enforcement — must be first
+#include "include/global/ArchGuard.hpp"
+
 #include <QApplication>
 #include <QCryptographicHash>
 #include <QDir>

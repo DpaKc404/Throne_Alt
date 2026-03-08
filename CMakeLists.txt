@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 3.20)
 
 project(Throne VERSION 0.1)
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# Strict amd64 enforcement — MUST be checked before any compilation targets
+# ═══════════════════════════════════════════════════════════════════════════════
+include("cmake/arch_enforce.cmake")
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -10,7 +15,15 @@ if(MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# Qt 6 — strictly required, no Qt 5 fallback
+# ═══════════════════════════════════════════════════════════════════════════════
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network LinguistTools DBus)
+
+message(STATUS "[Throne] Qt6 version: ${Qt6_VERSION}")
+if (Qt6_VERSION VERSION_LESS "6.5.0")
+    message(WARNING "Throne targets Qt 6.5+. Detected Qt ${Qt6_VERSION} — some features may be unavailable.")
+endif()
 
 if (NKR_CROSS)
     set_property(TARGET Qt6::moc PROPERTY IMPORTED_LOCATION /usr/bin/moc)
@@ -99,6 +112,17 @@ set(PROJECT_SOURCES
         3rdparty/protorpc/wire.pb/wire.pb.cc
 
         src/api/RPC.cpp
+        src/api/CoreVersionParser.cpp
+        include/api/CoreVersionParser.hpp
+
+        include/sys/ProxyStateManager.hpp
+        src/sys/ProxyStateManager.cpp
+        include/sys/NetworkLeakGuard.hpp
+        src/sys/NetworkLeakGuard.cpp
+
+        include/configs/NextGenFeatures.hpp
+        include/global/MemorySafety.hpp
+        include/global/ArchGuard.hpp
 
         src/dataStore/Database.cpp
         src/stats/traffic/TrafficLooper.cpp
