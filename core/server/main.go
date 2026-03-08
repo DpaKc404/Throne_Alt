@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/xtls/xray-core/core"
+	"google.golang.org/grpc"
 	"log"
 	"net"
 	"os"
@@ -47,20 +48,17 @@ func RunCore() {
 	boxmain.DisableColor()
 
 	// RPC
-	go func() {
-		for {
-			time.Sleep(100 * time.Millisecond)
-			conn, err := net.Dial("tcp", "127.0.0.1:"+strconv.Itoa(*_port))
-			if err == nil {
-				conn.Close()
-				fmt.Printf("Core listening at %v\n", "127.0.0.1:"+strconv.Itoa(*_port))
-				return
-			}
-		}
-	}()
-	err := gen.ListenAndServeLibcoreService("tcp", "127.0.0.1:"+strconv.Itoa(*_port), new(server))
+	addr := "127.0.0.1:" + strconv.Itoa(*_port)
+	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
+	}
+	fmt.Printf("Core listening at %v\n", addr)
+
+	s := grpc.NewServer(grpc.MaxRecvMsgSize(128 * 1024 * 1024))
+	gen.RegisterLibcoreServiceServer(s, &server{})
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
 	}
 }
 

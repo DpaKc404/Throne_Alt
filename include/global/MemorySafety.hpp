@@ -21,7 +21,7 @@
 namespace MemSafety {
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 1. ScopedRPCClient — RAII guard for protorpc::Client connections
+// 1. ScopedRPCClient — RAII guard for gRPC channel connections
 // ═══════════════════════════════════════════════════════════════════════════════
 // Ensures the RPC connection is closed even if an exception is thrown or
 // the calling function returns early.

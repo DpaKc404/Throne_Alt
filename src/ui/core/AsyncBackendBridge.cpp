@@ -62,9 +62,8 @@ void AsyncBackendBridge::queryStats() {
 
 void AsyncBackendBridge::queryConnections() {
     (void) QtConcurrent::run(QThreadPool::globalInstance(), [this]() {
-        bool rpcOK = false;
-        auto resp = API::defaultClient->ListConnections(&rpcOK);
-        if (rpcOK) emit connectionsReady(resp);
+        auto resp = API::defaultClient->ListConnections();
+        emit connectionsReady(resp);
     });
 }
 

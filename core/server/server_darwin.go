@@ -2,8 +2,9 @@ package main
 
 import (
 	"Core/gen"
+	"context"
 )
 
-func (s *server) SetSystemDNS(in *gen.SetSystemDNSRequest, out *gen.EmptyResp) error {
-	return nil
+func (s *server) SetSystemDNS(_ context.Context, in *gen.SetSystemDNSRequest) (*gen.EmptyResp, error) {
+	return &gen.EmptyResp{}, nil
 }

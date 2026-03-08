@@ -3,7 +3,7 @@
 # scripts/ci/setup_go.sh — Go toolchain installation for CI
 # ═══════════════════════════════════════════════════════════════════════════════
 # Installs the exact Go version required by the Throne core (sing-box + Xray).
-# Also installs protoc and the Go protorpc code generator.
+# Also installs protoc and the Go gRPC code generator.
 #
 # Environment variables (input):
 #   GO_VERSION    — Go version to install (default: read from core/server/go.mod)
@@ -69,11 +69,11 @@ echo ""
 echo ">> Installing Go protoc plugins..."
 
 if command -v go &>/dev/null; then
-    go install github.com/golang/protobuf/protoc-gen-go@latest 2>&1 || {
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@latest 2>&1 || {
         echo "WARN: Failed to install protoc-gen-go (non-fatal if already present)."
     }
-    go install github.com/chai2010/protorpc/protoc-gen-protorpc@latest 2>&1 || {
-        echo "WARN: Failed to install protoc-gen-protorpc (non-fatal if already present)."
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest 2>&1 || {
+        echo "WARN: Failed to install protoc-gen-go-grpc (non-fatal if already present)."
     }
     echo ">> Go protoc plugins installed."
 else

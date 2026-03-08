@@ -106,11 +106,6 @@ set(PROJECT_SOURCES
         3rdparty/quirc/quirc.c
         3rdparty/quirc/version_db.c
 
-        3rdparty/protorpc/rpc_client.cc
-        3rdparty/protorpc/rpc_conn.cc
-        3rdparty/protorpc/rpc_wire.cc
-        3rdparty/protorpc/wire.pb/wire.pb.cc
-
         src/api/RPC.cpp
         src/api/CoreVersionParser.cpp
         include/api/CoreVersionParser.hpp

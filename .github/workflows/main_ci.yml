@@ -135,8 +135,8 @@ jobs:
           curl -fLO "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VER}/protoc-${PROTOC_VER}-win64.zip"
           unzip "protoc-${PROTOC_VER}-win64.zip" -d protoc_install
           echo "$PWD/protoc_install/bin" >> "$GITHUB_PATH"
-          go install github.com/golang/protobuf/protoc-gen-go@latest
-          go install github.com/chai2010/protorpc/protoc-gen-protorpc@latest
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
       - name: Build Go backend
         if: steps.cache-go-artifacts.outputs.cache-hit != 'true'

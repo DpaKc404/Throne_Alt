@@ -494,7 +494,7 @@ namespace Configs {
             if (dataStore->vpn_ipv6) tunAddress += "fdfe:dcba:9876::1/96";
             inboundObj["address"] = tunAddress;
 
-            if (ctx->buildPrerequisities->routingDeps->defaultOutboundID == proxyID && dataStore->enable_tun_routing)
+            if (dataStore->enable_tun_routing)
             {
                 QJsonArray routeExcludeAddrs = {"127.0.0.0/8"};
                 QJsonArray routeExcludeSets;
@@ -548,7 +548,7 @@ namespace Configs {
                 return;
             }
             if (ent->type == "extracore") hasExtracore = true;
-            if (ent->type == "custom") hasCustom = true;
+            if (ent->type == "custom" && ent->Custom()->type == "fullconfig") hasCustom = true;
             if (ent->outbound->IsXray()) hasXray = true;
             ents.append(ent);
         }
@@ -956,6 +956,7 @@ namespace Configs {
                 };
         }
         bool ok;
+        conf.insert("log", QJsonObject{{"level", dataStore->log_level}});
         auto resp = API::defaultClient->CheckConfig(&ok, QJsonObject2QString(conf, true));
         if (!ok)
         {

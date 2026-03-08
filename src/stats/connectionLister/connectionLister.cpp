@@ -38,12 +38,7 @@ namespace Stats
 
     void ConnectionLister::update()
     {
-        bool ok;
-        libcore::ListConnectionsResp resp = API::defaultClient->ListConnections(&ok);
-        if (!ok)
-        {
-            return;
-        }
+        libcore::ListConnectionsResp resp = API::defaultClient->ListConnections();
 
         QMap<QString, ConnectionMetadata> toUpdate;
         QMap<QString, ConnectionMetadata> toAdd;

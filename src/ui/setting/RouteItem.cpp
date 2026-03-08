@@ -214,6 +214,7 @@ RouteItem::RouteItem(QWidget *parent, const std::shared_ptr<Configs::RoutingChai
            }
            chain->Rules.clear();
            chain->Rules << parsed;
+           currentIndex = -1;
            updateRouteItemsView();
            updateRuleSection();
 

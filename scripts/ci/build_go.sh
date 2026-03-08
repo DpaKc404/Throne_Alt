@@ -82,7 +82,7 @@ pushd core/server > /dev/null
 
 # Generate protobuf code
 pushd gen > /dev/null
-protoc -I . --go_out=. --protorpc_out=. libcore.proto
+protoc -I . --go_out=. --go-grpc_out=. libcore.proto
 popd > /dev/null
 
 # Extract sing-box version for ldflags

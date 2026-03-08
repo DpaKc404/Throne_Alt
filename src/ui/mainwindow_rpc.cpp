@@ -24,7 +24,7 @@ void MainWindow::setup_rpc() {
         [=](const QString &errStr) {
             MW_show_log("[Error] Core: " + errStr);
         },
-        "127.0.0.1", Configs::dataStore->core_port);
+        "127.0.0.1:" + Int2String(Configs::dataStore->core_port));
 
     // Looper
     runOnNewThread([=] { Stats::trafficLooper->Loop(); });
@@ -657,32 +657,21 @@ void MainWindow::profile_stop(bool crash, bool block, bool manual) {
     if (!mu_stopping.tryLock()) {
         return;
     }
-    QMutex blocker;
-    if (block) blocker.lock();
 
-    // timeout message
-    auto restartMsgbox = new QMessageBox(QMessageBox::Question, software_name, tr("If there is no response for a long time, it is recommended to restart the software."),
-                                         QMessageBox::Yes | QMessageBox::No, this);
-    connect(restartMsgbox, &QMessageBox::accepted, this, [=,this] { MW_dialog_message("", "RestartProgram"); });
-    auto restartMsgboxTimer = new MessageBoxTimer(this, restartMsgbox, 5000);
-
-    Stats::trafficLooper->loop_enabled = false;
-    Stats::connection_lister->suspend = true;
     UpdateConnectionListWithRecreate({});
-    Stats::trafficLooper->loop_mutex.lock();
-    Stats::trafficLooper->UpdateAll();
-    for (const auto &item: Stats::trafficLooper->items) {
-        if (item->id < 0) continue;
-        Configs::profileManager->GetProfile(item->id)->Save();
-        refresh_proxy_list(item->id);
-    }
-    Stats::trafficLooper->loop_mutex.unlock();
 
-    restartMsgboxTimer->cancel();
-    restartMsgboxTimer->deleteLater();
-    restartMsgbox->deleteLater();
+    runOnNewThread([=, this] {
+        Stats::trafficLooper->loop_enabled = false;
+        Stats::connection_lister->suspend = true;
+        Stats::trafficLooper->loop_mutex.lock();
+        Stats::trafficLooper->UpdateAll();
+        for (const auto &item: Stats::trafficLooper->items) {
+            if (item->id < 0) continue;
+            Configs::profileManager->GetProfile(item->id)->Save();
+            refresh_proxy_list(item->id);
+        }
+        Stats::trafficLooper->loop_mutex.unlock();
 
-    runOnNewThread([=, this, &blocker] {
         // do stop
         MW_show_log(">>>>>>>> " + tr("Stopping profile %1").arg(running->outbound->DisplayTypeAndName()));
         if (!profile_stop_stage2()) {
@@ -693,19 +682,11 @@ void MainWindow::profile_stop(bool crash, bool block, bool manual) {
         Configs::dataStore->need_keep_vpn_off = false;
         running = nullptr;
 
-        if (block) blocker.unlock();
-
         runOnUiThread([=, this] {
             refresh_status();
             refresh_proxy_list_impl_refresh_data(id, true);
 
             mu_stopping.unlock();
-        });
-    });
-
-    if (block)
-    {
-        blocker.lock();
-        blocker.unlock();
-    }
+        }, true);
+    }, block);
 }
