@@ -3,8 +3,7 @@
 // src/sys/ProxyStateManager.cpp — Thread-safe proxy mode hot-swap engine
 // ═══════════════════════════════════════════════════════════════════════════════
 #include "include/sys/ProxyStateManager.hpp"
-#include "include/global/DataStore.hpp"
-#include "include/global/Utils.hpp"
+#include "include/global/Configs.hpp"
 #include "include/api/RPC.h"
 
 #include <QMutexLocker>
@@ -130,7 +129,7 @@ void ProxyStateManager::transitionToDirect() {
 
     // 2. If TUN mode was active, signal the core to deactivate TUN
     //    The core stays alive — only routing changes.
-    if (Configs::dataStore && Configs::dataStore->enable_tun) {
+    if (Configs::dataStore && Configs::dataStore->spmode_vpn) {
         // Clear system DNS if it was set by us
         if (API::defaultClient) {
             bool rpcOK;

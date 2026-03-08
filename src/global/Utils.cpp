@@ -170,13 +170,13 @@ QList<QString> QListInt2QListString(const QList<int> &list) {
 
 QByteArray ReadFile(const QString &path) {
     QFile file(path);
-    file.open(QFile::ReadOnly);
+    (void) file.open(QFile::ReadOnly);
     return file.readAll();
 }
 
 QString ReadFileText(const QString &path) {
     QFile file(path);
-    file.open(QFile::ReadOnly | QFile::Text);
+    (void) file.open(QFile::ReadOnly | QFile::Text);
     QTextStream stream(&file);
     return stream.readAll();
 }

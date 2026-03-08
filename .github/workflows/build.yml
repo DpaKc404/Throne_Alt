@@ -220,7 +220,6 @@ jobs:
         shell: bash
         if: contains(matrix.platform, 'ubuntu')
         run: |
-          sudo apt-get update && sudo apt-get upgrade -y
           mkdir -p build && cd build
           curl -fLso srslist.h "https://raw.githubusercontent.com/throneproj/routeprofiles/rule-set/srslist.h"
           cmake -GNinja \

@@ -3,7 +3,7 @@
 // src/sys/NetworkLeakGuard.cpp — OS-level IP/DNS leak prevention engine
 // ═══════════════════════════════════════════════════════════════════════════════
 #include "include/sys/NetworkLeakGuard.hpp"
-#include "include/global/DataStore.hpp"
+#include "include/global/Configs.hpp"
 
 #include <QProcess>
 #include <QRegularExpression>
@@ -75,7 +75,7 @@ LeakAuditResult NetworkLeakGuard::auditRoutingTable() {
     r.routingIntact = true;
     r. tunInterfaceUp = true;
 
-    bool vpnMode = Configs::dataStore && Configs::dataStore->enable_tun;
+    bool vpnMode = Configs::dataStore && Configs::dataStore->spmode_vpn;
 
     QProcess proc;
 #ifdef Q_OS_WIN
@@ -128,7 +128,7 @@ LeakAuditResult NetworkLeakGuard::auditDNSLeaks() {
     LeakAuditResult r;
     r.dnsLeakFree = true;
 
-    bool vpnMode = Configs::dataStore && Configs::dataStore->enable_tun;
+    bool vpnMode = Configs::dataStore && Configs::dataStore->spmode_vpn;
     if (!vpnMode && !(Configs::dataStore && Configs::dataStore->enable_dns_server)) {
         r.diagnostics << QStringLiteral("DNS audit skipped (not in VPN/DNS hijack mode)");
         return r;
