@@ -26,10 +26,10 @@ QVariant ServerListModel::data(const QModelIndex &index, int role) const {
 
     switch (role) {
     case Qt::DisplayRole:
-    case NameRole:       return e->bean->DisplayName();
-    case AddressRole:    return e->bean->DisplayAddress();
-    case PortRole:       return e->bean->DisplayPort();
-    case TypeRole:       return e->bean->DisplayType();
+    case NameRole:       return e->_bean->DisplayName();
+    case AddressRole:    return e->_bean->DisplayAddress();
+    case PortRole:       return e->_bean->DisplayPort();
+    case TypeRole:       return e->_bean->DisplayType();
     case LatencyRole:    return entry.latencyMs;
     case TrafficUpRole:  return entry.trafficUp;
     case TrafficDownRole:return entry.trafficDown;

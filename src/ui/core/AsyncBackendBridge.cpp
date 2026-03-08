@@ -27,7 +27,9 @@ void AsyncBackendBridge::runAsync(Func &&func) {
 void AsyncBackendBridge::startCore(const libcore::LoadConfigReq &req) {
     auto reqCopy = req; // capture by value for thread safety
     QtConcurrent::run(QThreadPool::globalInstance(), [this, reqCopy]() {
-        QString err = API::defaultClient->Start(reqCopy);
+        bool rpcOK = false;
+        QString err = API::defaultClient->Start(&rpcOK, reqCopy);
+        if (!rpcOK) { emit backendError(QStringLiteral("startCore"), QStringLiteral("RPC connection failed")); return; }
         if (err.isEmpty())
             emit coreStarted();
         else
@@ -37,7 +39,9 @@ void AsyncBackendBridge::startCore(const libcore::LoadConfigReq &req) {
 
 void AsyncBackendBridge::stopCore() {
     QtConcurrent::run(QThreadPool::globalInstance(), [this]() {
-        QString err = API::defaultClient->Stop();
+        bool rpcOK = false;
+        QString err = API::defaultClient->Stop(&rpcOK);
+        if (!rpcOK) { emit backendError(QStringLiteral("stopCore"), QStringLiteral("RPC connection failed")); return; }
         if (err.isEmpty())
             emit coreStopped();
         else
@@ -58,8 +62,9 @@ void AsyncBackendBridge::queryStats() {
 
 void AsyncBackendBridge::queryConnections() {
     QtConcurrent::run(QThreadPool::globalInstance(), [this]() {
-        auto resp = API::defaultClient->ListConnections();
-        emit connectionsReady(resp);
+        bool rpcOK = false;
+        auto resp = API::defaultClient->ListConnections(&rpcOK);
+        if (rpcOK) emit connectionsReady(resp);
     });
 }
 
@@ -70,29 +75,33 @@ void AsyncBackendBridge::queryConnections() {
 void AsyncBackendBridge::runLatencyTest(const libcore::TestReq &req) {
     auto reqCopy = req;
     QtConcurrent::run(QThreadPool::globalInstance(), [this, reqCopy]() {
-        auto resp = API::defaultClient->Test(reqCopy);
-        emit latencyTestDone(resp);
+        bool rpcOK = false;
+        auto resp = API::defaultClient->Test(&rpcOK, reqCopy);
+        if (rpcOK) emit latencyTestDone(resp);
     });
 }
 
 void AsyncBackendBridge::stopTests() {
     QtConcurrent::run(QThreadPool::globalInstance(), [this]() {
-        API::defaultClient->StopTests();
+        bool rpcOK = false;
+        API::defaultClient->StopTests(&rpcOK);
     });
 }
 
 void AsyncBackendBridge::runSpeedTest(const libcore::SpeedTestRequest &req) {
     auto reqCopy = req;
     QtConcurrent::run(QThreadPool::globalInstance(), [this, reqCopy]() {
-        auto resp = API::defaultClient->SpeedTest(reqCopy);
-        emit speedTestDone(resp);
+        bool rpcOK = false;
+        auto resp = API::defaultClient->SpeedTest(&rpcOK, reqCopy);
+        if (rpcOK) emit speedTestDone(resp);
     });
 }
 
 void AsyncBackendBridge::querySpeedTestResults() {
     QtConcurrent::run(QThreadPool::globalInstance(), [this]() {
-        auto resp = API::defaultClient->QueryCurrentSpeedTests();
-        emit speedTestProgress(resp);
+        bool rpcOK = false;
+        auto resp = API::defaultClient->QueryCurrentSpeedTests(&rpcOK);
+        if (rpcOK) emit speedTestProgress(resp);
     });
 }
 
@@ -103,7 +112,9 @@ void AsyncBackendBridge::querySpeedTestResults() {
 void AsyncBackendBridge::checkConfig(const QString &config) {
     QString cfgCopy = config;
     QtConcurrent::run(QThreadPool::globalInstance(), [this, cfgCopy]() {
-        QString err = API::defaultClient->CheckConfig(cfgCopy);
+        bool rpcOK = false;
+        QString err = API::defaultClient->CheckConfig(&rpcOK, cfgCopy);
+        if (!rpcOK) { emit backendError(QStringLiteral("checkConfig"), QStringLiteral("RPC connection failed")); return; }
         emit configCheckResult(err);
     });
 }
@@ -114,7 +125,9 @@ void AsyncBackendBridge::checkConfig(const QString &config) {
 
 void AsyncBackendBridge::setSystemDNS(bool clear) {
     QtConcurrent::run(QThreadPool::globalInstance(), [this, clear]() {
-        QString err = API::defaultClient->SetSystemDNS(clear);
+        bool rpcOK = false;
+        QString err = API::defaultClient->SetSystemDNS(&rpcOK, clear);
+        if (!rpcOK) { emit backendError(QStringLiteral("setSystemDNS"), QStringLiteral("RPC connection failed")); return; }
         emit systemDNSSet(err);
     });
 }
