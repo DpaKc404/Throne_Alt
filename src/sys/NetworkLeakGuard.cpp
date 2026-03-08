@@ -178,7 +178,7 @@ LeakAuditResult NetworkLeakGuard::auditIPv6() {
     r.ipv6Contained = true;
 
     // Check if IPv6 is solicited by the user
-    bool ipv6enabled = Configs::dataStore && Configs::dataStore->enable_ipv6;
+    bool ipv6enabled = Configs::dataStore && Configs::dataStore->vpn_ipv6;
 
     if (ipv6enabled) {
         r.diagnostics << QStringLiteral("IPv6 enabled by user — checking tunnel coverage");

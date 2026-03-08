@@ -73,9 +73,6 @@ fi
 # ─── Windows 64-bit archive ──────────────────────────────────────────────────
 echo ""
 echo ">> Packing Windows 64-bit..."
-if [[ -f ThroneSetup.exe ]]; then
-    mv ThroneSetup.exe "${version_standalone}-windows64-installer.exe"
-fi
 if [[ -d windows64 ]]; then
     mv windows64 Throne
     mv Throne/Throne.pdb "debug/${version_standalone}-windows64.pdb" || true

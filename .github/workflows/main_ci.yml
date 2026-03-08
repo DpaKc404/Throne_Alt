@@ -249,16 +249,6 @@ jobs:
           cd ..
           ./script/deploy_linux64.sh
 
-      # ── NSIS installer (Windows only) ──
-      - name: Build Windows Installer
-        if: matrix.os_label == 'windows'
-        shell: bash
-        run: |
-          choco install nsis -y
-          cp ./script/windows_installer.nsi .
-          "/c/Program Files (x86)/NSIS/makensis.exe" windows_installer.nsi
-          cp ThroneSetup.exe deployment/
-
       # ── ccache stats ──
       - name: ccache statistics
         shell: bash
