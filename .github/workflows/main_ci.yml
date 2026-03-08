@@ -132,7 +132,7 @@ jobs:
         shell: bash
         run: |
           PROTOC_VER="31.1"
-          curl -fLO "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VER}/protoc-${PROTOC_VER}-win64.zip"
+          curl -fLO --retry 5 --retry-delay 3 --retry-all-errors "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VER}/protoc-${PROTOC_VER}-win64.zip"
           unzip "protoc-${PROTOC_VER}-win64.zip" -d protoc_install
           echo "$PWD/protoc_install/bin" >> "$GITHUB_PATH"
           go install google.golang.org/protobuf/cmd/protoc-gen-go@latest

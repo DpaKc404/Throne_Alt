@@ -318,6 +318,14 @@ namespace Configs {
         return res;
     }
 
+    // On Linux+TUN, "localhost"/"local" would use underlying DNS and can trigger "No default interface".
+    // Return fallback only for exact localhost/local (not e.g. "local.domain.com").
+    inline QString effectiveDirectDnsForTun(const QString &address, const std::shared_ptr<BuildSingBoxConfigContext> &ctx) {
+        if (ctx->tunEnabled && getOS() == Linux && (address == "localhost" || address == "local"))
+            return "8.8.8.8";
+        return address;
+    }
+
     void buildDNSSection(std::shared_ptr<BuildSingBoxConfigContext> &ctx, bool useDnsObj) {
         if (getOS() == Darwin && dataStore->core_box_underlying_dns.isEmpty() && dataStore->spmode_vpn)
         {
@@ -363,8 +371,9 @@ namespace Configs {
             }
         }
 
-        // direct
-        auto directDnsObj = buildDnsObj(dataStore->routing->direct_dns, ctx);
+        // direct: use effective address (localhost/local -> fallback on Linux+TUN to avoid "No default interface")
+        QString directDnsAddress = effectiveDirectDnsForTun(dataStore->routing->direct_dns, ctx);
+        auto directDnsObj = buildDnsObj(directDnsAddress, ctx);
         directDnsObj["tag"] = "dns-direct";
         directDnsObj["domain_resolver"] = "dns-local";
         if (dataStore->routing->dns_final_out == "direct") {
@@ -452,8 +461,14 @@ namespace Configs {
                 };
         }
 
-        // Local
-        auto dnsLocalAddress = dataStore->core_box_underlying_dns.isEmpty() ? "local" : dataStore->core_box_underlying_dns;
+        // Local: avoid "underlying" on Linux+TUN when no override set (prevents "No default interface" at startup)
+        QString dnsLocalAddress = dataStore->core_box_underlying_dns;
+        if (dnsLocalAddress.isEmpty()) {
+            if (ctx->tunEnabled && getOS() == Linux)
+                dnsLocalAddress = effectiveDirectDnsForTun(dataStore->routing->direct_dns, ctx);
+            if (dnsLocalAddress.isEmpty())
+                dnsLocalAddress = "local";
+        }
         auto dnsLocalObj = buildDnsObj(dnsLocalAddress, ctx);
         dnsLocalObj["tag"] = "dns-local";
         servers += dnsLocalObj;
@@ -494,12 +509,15 @@ namespace Configs {
             if (dataStore->vpn_ipv6) tunAddress += "fdfe:dcba:9876::1/96";
             inboundObj["address"] = tunAddress;
 
-            if (dataStore->enable_tun_routing)
-            {
+            // On Linux: always exclude direct IPs from TUN so traffic (e.g. Tailscale/Headscale 100.64.0.0/10)
+            // is never marked by nftables (avoids asymmetric routing). On other platforms: only when default is proxy.
+            bool needRouteExclude = (ctx->os == Linux)
+                || (ctx->buildPrerequisities->routingDeps->defaultOutboundID == proxyID && dataStore->enable_tun_routing);
+            if (needRouteExclude) {
                 QJsonArray routeExcludeAddrs = {"127.0.0.0/8"};
                 QJsonArray routeExcludeSets;
-                for (auto item: tunDeps->directIPCIDRs) routeExcludeAddrs << item;
-                for (auto item: tunDeps->directIPSets) routeExcludeSets << item;
+                for (const auto &item : tunDeps->directIPCIDRs) routeExcludeAddrs << item;
+                for (const auto &item : tunDeps->directIPSets) routeExcludeSets << item;
                 inboundObj["route_exclude_address"] = routeExcludeAddrs;
                 if (!routeExcludeSets.isEmpty()) inboundObj["route_exclude_address_set"] = routeExcludeSets;
             }

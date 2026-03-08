@@ -29,14 +29,14 @@
 #endif
 
 // DWM_SYSTEMBACKDROP_TYPE values — guard against newer SDKs that already define these.
-#ifndef DWMSBT_MAINWINDOW
-enum {
-    DWMSBT_AUTO = 0,
-    DWMSBT_NONE = 1,
-    DWMSBT_MAINWINDOW = 2,   // Mica
-    DWMSBT_TRANSIENTWINDOW = 3, // Acrylic
-    DWMSBT_TABBEDWINDOW = 4  // Tabbed Mica
-};
+// DWMSBT_* are enum values (not macros), so #ifndef does not work; use __has_include
+// to detect the Windows 11 SDK that ships them in dwmapi.h.
+#if !defined(__has_include) || !__has_include(<uxtheme.h>) || (defined(NTDDI_VERSION) && NTDDI_VERSION < 0x0A00000C)
+static constexpr int DWMSBT_AUTO             = 0;
+static constexpr int DWMSBT_NONE             = 1;
+static constexpr int DWMSBT_MAINWINDOW       = 2;   // Mica
+static constexpr int DWMSBT_TRANSIENTWINDOW  = 3;   // Acrylic
+static constexpr int DWMSBT_TABBEDWINDOW     = 4;   // Tabbed Mica
 #endif
 
 namespace Platform {

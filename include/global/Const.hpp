@@ -59,4 +59,7 @@ namespace Configs {
     namespace Xray {
         inline QStringList XrayLogLevels = {"debug", "info", "warning", "error", "none"};
     }
+
+    // Custom Qt item-data role for chain editor profile IDs
+    constexpr int PROXY_ITEM_ID_ROLE = Qt::UserRole + 1;
 } // namespace Configs

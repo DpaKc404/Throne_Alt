@@ -32,7 +32,7 @@ bool EditChain::onEnd() {
 
     QList<int> idList;
     for (int i = 0; i < ui->listWidget->count(); i++) {
-        idList << ui->listWidget->item(i)->data(114514).toInt();
+        idList << ui->listWidget->item(i)->data(Configs::PROXY_ITEM_ID_ROLE).toInt();
     }
     outbound->list = idList;
 
@@ -51,7 +51,7 @@ void EditChain::AddProfileToListIfExist(int profileId) {
     auto _ent = Configs::profileManager->GetProfile(profileId);
     if (_ent != nullptr && _ent->type != "chain" && _ent->type != "extracore") {
         auto wI = new QListWidgetItem();
-        wI->setData(114514, profileId);
+        wI->setData(Configs::PROXY_ITEM_ID_ROLE, profileId);
         auto w = new ProxyItem(this, _ent, wI);
         ui->listWidget->addItem(wI);
         ui->listWidget->setItemWidget(wI, w);
@@ -69,7 +69,7 @@ void EditChain::AddProfileToListIfExist(int profileId) {
 void EditChain::ReplaceProfile(ProxyItem *w, int profileId) {
     auto _ent = Configs::profileManager->GetProfile(profileId);
     if (_ent != nullptr && _ent->type != "chain" && _ent->type != "extracore") {
-        w->item->setData(114514, profileId);
+        w->item->setData(Configs::PROXY_ITEM_ID_ROLE, profileId);
         w->ent = _ent;
         w->refresh_data();
     }

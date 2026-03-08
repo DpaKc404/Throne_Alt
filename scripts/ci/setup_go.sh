@@ -56,7 +56,7 @@ else
     PROTOC_URL="https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VER}/${PROTOC_ZIP}"
 
     echo ">> Downloading ${PROTOC_URL}..."
-    curl -fLO "${PROTOC_URL}"
+    curl -fLO --retry 5 --retry-delay 3 --retry-all-errors "${PROTOC_URL}"
     unzip -o "${PROTOC_ZIP}" -d /tmp/protoc_install
     sudo cp /tmp/protoc_install/bin/protoc /usr/local/bin/
     rm -rf "${PROTOC_ZIP}" /tmp/protoc_install
