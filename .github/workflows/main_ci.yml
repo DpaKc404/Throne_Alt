@@ -1,0 +1,326 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Throne — Consolidated CI/CD Pipeline (main_ci.yml)
+# ═══════════════════════════════════════════════════════════════════════════════
+# Architecture: Strictly amd64 — no ARM, no 32-bit, no cross-compilation.
+# Matrix: Iterates over Operating Systems (linux, windows) only.
+# Build system: Ninja + ccache for C++, Go modules for backend.
+# Qt: Latest stable Qt 6 via aqtinstall with aggressive caching.
+#
+# Jobs:
+#   1. lint          — Static analysis (cppcheck, clang-format, CMake syntax)
+#   2. build-go      — Go backend for linux/windows/darwin (all amd64)
+#   3. build-cpp     — Qt 6 GUI for linux/windows (amd64 matrix)
+#   4. release       — Pack archives & publish via ghr
+# ═══════════════════════════════════════════════════════════════════════════════
+name: Throne CI/CD (amd64)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release Tag and version"
+        required: true
+      publish:
+        description: "r = release, p = prerelease, empty = no publish"
+        required: false
+  push:
+    branches: [main]
+    paths-ignore: ["**.md", "LICENSE", "docs/**"]
+  pull_request:
+    branches: [main]
+    paths-ignore: ["**.md", "LICENSE", "docs/**"]
+
+# ─── Global environment ──────────────────────────────────────────────────────
+env:
+  QT_VERSION: "6.10.1"
+  GO_VERSION: "1.25.5"
+  CCACHE_MAXSIZE: "500M"
+  CCACHE_COMPRESS: "true"
+  CCACHE_COMPRESSLEVEL: "6"
+
+# Cancel in-progress runs for the same branch/PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# ═════════════════════════════════════════════════════════════════════════════
+jobs:
+
+  # ─── Job 1: Lint ──────────────────────────────────────────────────────────
+  lint:
+    name: "Lint (cppcheck + clang-format)"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          submodules: "recursive"
+
+      - name: Run lint checks
+        shell: bash
+        run: ./scripts/ci/lint.sh
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: lint-report
+          path: lint-report/
+          retention-days: 14
+
+  # ─── Job 2: Build Go backend ─────────────────────────────────────────────
+  build-go:
+    name: "Go (${{ matrix.goos }}/amd64)"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [linux, windows, darwin]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          submodules: "recursive"
+
+      # ── Go build cache ──
+      - name: Cache Go modules & build
+        uses: actions/cache@v4.2.3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-${{ matrix.goos }}-amd64-${{ env.GO_VERSION }}-${{ hashFiles('core/server/go.sum') }}
+          restore-keys: |
+            go-${{ matrix.goos }}-amd64-${{ env.GO_VERSION }}-
+
+      # ── Artifact-level cache (skip rebuild if nothing changed) ──
+      - name: Cache Go artifacts
+        id: cache-go-artifacts
+        uses: actions/cache@v4.2.3
+        with:
+          path: artifacts.tgz
+          key: GoArtifacts-${{ matrix.goos }}-amd64-${{ hashFiles('scripts/ci/build_go.sh', 'core/**') }}-${{ env.GO_VERSION }}
+
+      - name: Install Go
+        if: steps.cache-go-artifacts.outputs.cache-hit != 'true'
+        uses: actions/setup-go@v5.5.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: core/server/go.sum
+
+      - name: Setup Go toolchain
+        if: steps.cache-go-artifacts.outputs.cache-hit != 'true'
+        shell: bash
+        run: ./scripts/ci/setup_go.sh
+
+      - name: Build Go backend
+        if: steps.cache-go-artifacts.outputs.cache-hit != 'true'
+        shell: bash
+        env:
+          GOOS: ${{ matrix.goos }}
+        run: ./scripts/ci/build_go.sh
+
+      - name: Tar artifacts
+        if: steps.cache-go-artifacts.outputs.cache-hit != 'true'
+        run: tar czvf artifacts.tgz ./deployment
+
+      - name: Upload Go artifact
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: Throne-${{ github.sha }}-Go-${{ matrix.goos }}-amd64
+          path: artifacts.tgz
+
+  # ─── Job 3: Build C++ GUI ────────────────────────────────────────────────
+  build-cpp:
+    name: "C++ (${{ matrix.os_label }}/amd64)"
+    needs: [build-go]
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # ── Linux amd64 ──
+          - platform: ubuntu-22.04
+            os_label: linux
+            arch: amd64
+            compiler: gcc
+          # ── Windows amd64 (MSVC) ──
+          - platform: windows-latest
+            os_label: windows
+            arch: x86_64
+            compiler: msvc
+    runs-on: ${{ matrix.platform }}
+    env:
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+      INPUT_VERSION: ${{ github.event.inputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          submodules: "recursive"
+
+      # ── Download Go artifacts ──
+      - name: Download Go artifacts
+        uses: actions/download-artifact@v4.3.0
+        with:
+          path: download-artifact
+
+      # ── MSVC (Windows only) ──
+      - name: Install MSVC
+        if: matrix.os_label == 'windows'
+        uses: ilammy/msvc-dev-cmd@v1.13.0
+        with:
+          arch: ${{ matrix.arch }}
+
+      # ── ccache installation ──
+      - name: Install ccache
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            sudo apt-get update && sudo apt-get install -y ccache
+          elif [[ "$RUNNER_OS" == "Windows" ]]; then
+            choco install ccache -y
+          fi
+          ccache --version
+
+      - name: Restore ccache
+        uses: actions/cache@v4.2.3
+        with:
+          path: |
+            ~/.ccache
+            ~/AppData/Local/ccache
+          key: ccache-${{ matrix.os_label }}-${{ matrix.arch }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.os_label }}-${{ matrix.arch }}-
+
+      # ── Qt 6 via aqtinstall ──
+      - name: Install Qt 6
+        uses: jurplel/install-qt-action@v4.3.0
+        with:
+          version: ${{ env.QT_VERSION }}
+          setup-python: true
+          cache: true
+          cache-key-prefix: Qt-${{ env.QT_VERSION }}-${{ matrix.os_label }}-${{ matrix.arch }}
+
+      # ── OpenSSL (Windows only) ──
+      - name: OpenSSL cache (Windows)
+        id: cache-openssl
+        if: matrix.os_label == 'windows'
+        uses: actions/cache@v4.2.3
+        with:
+          path: C:/vcpkg/installed/x64-windows-static
+          key: OpenSSL-${{ matrix.os_label }}-${{ matrix.arch }}
+
+      - name: Install OpenSSL (Windows)
+        if: matrix.os_label == 'windows' && steps.cache-openssl.outputs.cache-hit != 'true'
+        shell: powershell
+        run: |
+          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
+          vcpkg install openssl:x64-windows-static
+
+      # ══════════════════════════════════════════════════════════════════════
+      #   Configure & Build
+      # ══════════════════════════════════════════════════════════════════════
+
+      - name: Configure & Build (Windows)
+        if: matrix.os_label == 'windows'
+        shell: bash
+        run: |
+          export OPENSSL_ROOT_DIR="C:/vcpkg/installed/x64-windows-static"
+          mkdir -p build && cd build
+          curl -fLso srslist.h "https://raw.githubusercontent.com/throneproj/routeprofiles/rule-set/srslist.h"
+          cmake -GNinja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            ..
+          ninja -j$(nproc 2>/dev/null || echo 4)
+          cd ..
+          ./script/deploy_windows.sh
+
+      - name: Configure & Build (Linux)
+        if: matrix.os_label == 'linux'
+        shell: bash
+        run: |
+          sudo apt-get update && sudo apt-get upgrade -y
+          mkdir -p build && cd build
+          curl -fLso srslist.h "https://raw.githubusercontent.com/throneproj/routeprofiles/rule-set/srslist.h"
+          cmake -GNinja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++" \
+            ..
+          ninja -j$(nproc)
+          cd ..
+          ./script/deploy_linux64.sh
+
+      # ── NSIS installer (Windows only) ──
+      - name: Build Windows Installer
+        if: matrix.os_label == 'windows'
+        shell: cmd
+        run: |
+          choco install nsis
+          cp .\script\windows_installer.nsi .
+          "C:\Program Files (x86)\NSIS\makensis.exe" windows_installer.nsi
+          cp ThroneSetup.exe deployment/
+
+      # ── ccache stats ──
+      - name: ccache statistics
+        shell: bash
+        run: ccache -s
+
+      # ── Upload ──
+      - name: Tar artifacts
+        shell: bash
+        run: tar czvf artifacts.tgz ./deployment
+
+      - name: Upload C++ artifact
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: Throne-${{ github.sha }}-${{ matrix.os_label }}-${{ matrix.arch }}-Qt${{ env.QT_VERSION }}
+          path: artifacts.tgz
+
+  # ─── Job 4: Release ──────────────────────────────────────────────────────
+  release:
+    name: "Pack & Publish (amd64)"
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    needs: [build-cpp]
+    permissions:
+      contents: write
+      actions: read
+    env:
+      INPUT_VERSION: ${{ github.event.inputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4.3.0
+        with:
+          path: download-artifact
+
+      - name: Pack release archives
+        shell: bash
+        env:
+          PUBLISH_MODE: ${{ github.event.inputs.publish }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./scripts/ci/release_pack.sh
+
+      - name: Upload debug symbols
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: Debug-${{ github.sha }}
+          path: deployment/debug-symbols.zip
+
+      - name: Upload deployment
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: Deployment-${{ github.sha }}
+          path: deployment
