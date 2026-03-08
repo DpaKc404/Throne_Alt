@@ -1,16 +1,15 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 # Throne — Consolidated CI/CD Pipeline (main_ci.yml)
 # ═══════════════════════════════════════════════════════════════════════════════
-# Architecture: Strictly amd64 — no ARM, no 32-bit, no cross-compilation.
-# Matrix: Iterates over Operating Systems (linux, windows) only.
+# Architecture: Strictly amd64 — no ARM, no 32-bit.
+# Matrix: Iterates over Operating Systems (linux, windows) with cross_os/cross_arch.
 # Build system: Ninja + ccache for C++, Go modules for backend.
 # Qt: Latest stable Qt 6 via aqtinstall with aggressive caching.
 #
 # Jobs:
-#   1. lint          — Static analysis (cppcheck, clang-format, CMake syntax)
-#   2. build-go      — Go backend for linux/windows (all amd64)
-#   3. build-cpp     — Qt 6 GUI for linux/windows (amd64 matrix)
-#   4. release       — Pack archives & publish via ghr
+#   1. lint    — Static analysis (cppcheck, clang-format, CMake syntax)
+#   2. build   — Go backend + Qt 6 GUI per-platform (merged)
+#   3. release — Pack archives & publish via ghr
 # ═══════════════════════════════════════════════════════════════════════════════
 name: Throne CI/CD (amd64)
 
@@ -70,74 +69,10 @@ jobs:
           path: lint-report/
           retention-days: 14
 
-  # ─── Job 2: Build Go backend ─────────────────────────────────────────────
-  build-go:
-    name: "Go (${{ matrix.goos }}/amd64)"
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        goos: [linux, windows]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4.2.2
-        with:
-          submodules: "recursive"
-
-      # ── Go build cache ──
-      - name: Cache Go modules & build
-        uses: actions/cache@v4.2.3
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-${{ matrix.goos }}-amd64-${{ env.GO_VERSION }}-${{ hashFiles('core/server/go.sum') }}
-          restore-keys: |
-            go-${{ matrix.goos }}-amd64-${{ env.GO_VERSION }}-
-
-      # ── Artifact-level cache (skip rebuild if nothing changed) ──
-      - name: Cache Go artifacts
-        id: cache-go-artifacts
-        uses: actions/cache@v4.2.3
-        with:
-          path: artifacts.tgz
-          key: GoArtifacts-${{ matrix.goos }}-amd64-${{ hashFiles('scripts/ci/build_go.sh', 'core/**') }}-${{ env.GO_VERSION }}
-
-      - name: Install Go
-        if: steps.cache-go-artifacts.outputs.cache-hit != 'true'
-        uses: actions/setup-go@v5.5.0
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache-dependency-path: core/server/go.sum
-
-      - name: Setup Go toolchain
-        if: steps.cache-go-artifacts.outputs.cache-hit != 'true'
-        shell: bash
-        run: ./scripts/ci/setup_go.sh
-
-      - name: Build Go backend
-        if: steps.cache-go-artifacts.outputs.cache-hit != 'true'
-        shell: bash
-        env:
-          GOOS: ${{ matrix.goos }}
-        run: ./scripts/ci/build_go.sh
-
-      - name: Tar artifacts
-        if: steps.cache-go-artifacts.outputs.cache-hit != 'true'
-        run: tar czvf artifacts.tgz ./deployment
-
-      - name: Upload Go artifact
-        uses: actions/upload-artifact@v4.6.2
-        with:
-          name: Throne-${{ github.sha }}-Go-${{ matrix.goos }}-amd64
-          path: artifacts.tgz
-
-  # ─── Job 3: Build C++ GUI ────────────────────────────────────────────────
-  build-cpp:
-    name: "C++ (${{ matrix.os_label }}/amd64)"
-    needs: [build-go]
+  # ─── Job 2: Build (Go + C++ merged) ──────────────────────────────────────
+  build:
+    name: "Build (${{ matrix.os_label }}/amd64)"
+    needs: [lint]
     permissions:
       contents: read
     strategy:
@@ -147,12 +82,14 @@ jobs:
           # ── Linux amd64 ──
           - platform: ubuntu-22.04
             os_label: linux
-            arch: amd64
+            cross_os: linux
+            cross_arch: amd64
             compiler: gcc
           # ── Windows amd64 (MSVC) ──
           - platform: windows-latest
             os_label: windows
-            arch: x86_64
+            cross_os: windows
+            cross_arch: amd64
             compiler: msvc
     runs-on: ${{ matrix.platform }}
     env:
@@ -164,18 +101,83 @@ jobs:
         with:
           submodules: "recursive"
 
-      # ── Download Go artifacts ──
-      - name: Download Go artifacts
-        uses: actions/download-artifact@v4.3.0
+      # ══════════════════════════════════════════════════════════════════════
+      #   Stage A — Go backend build
+      # ══════════════════════════════════════════════════════════════════════
+
+      # ── Go build cache ──
+      - name: Cache Go modules & build
+        uses: actions/cache@v4.2.3
         with:
-          path: download-artifact
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-${{ matrix.cross_os }}-${{ matrix.cross_arch }}-${{ env.GO_VERSION }}-${{ hashFiles('core/server/go.sum') }}
+          restore-keys: |
+            go-${{ matrix.cross_os }}-${{ matrix.cross_arch }}-${{ env.GO_VERSION }}-
+
+      # ── Artifact-level cache (skip Go rebuild if nothing changed) ──
+      - name: Cache Go artifacts
+        id: cache-go-artifacts
+        uses: actions/cache@v4.2.3
+        with:
+          path: go-artifacts.tgz
+          key: GoArtifacts-${{ matrix.cross_os }}-${{ matrix.cross_arch }}-${{ hashFiles('scripts/ci/build_go.sh', 'core/**') }}-${{ env.GO_VERSION }}
+
+      - name: Install Go
+        if: steps.cache-go-artifacts.outputs.cache-hit != 'true'
+        uses: actions/setup-go@v5.5.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: core/server/go.sum
+
+      - name: Setup Go toolchain (Linux)
+        if: steps.cache-go-artifacts.outputs.cache-hit != 'true' && runner.os != 'Windows'
+        shell: bash
+        run: ./scripts/ci/setup_go.sh
+
+      - name: Setup Go toolchain (Windows)
+        if: steps.cache-go-artifacts.outputs.cache-hit != 'true' && runner.os == 'Windows'
+        shell: bash
+        run: |
+          PROTOC_VER="31.1"
+          curl -fLO "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VER}/protoc-${PROTOC_VER}-win64.zip"
+          unzip "protoc-${PROTOC_VER}-win64.zip" -d protoc_install
+          echo "$PWD/protoc_install/bin" >> "$GITHUB_PATH"
+          go install github.com/golang/protobuf/protoc-gen-go@latest
+          go install github.com/chai2010/protorpc/protoc-gen-protorpc@latest
+
+      - name: Build Go backend
+        if: steps.cache-go-artifacts.outputs.cache-hit != 'true'
+        shell: bash
+        env:
+          GOOS: ${{ matrix.cross_os }}
+          GOARCH: ${{ matrix.cross_arch }}
+        run: |
+          ./scripts/ci/build_go.sh
+          tar czf go-artifacts.tgz ./deployment
+
+      - name: Prepare Go artifacts for deploy scripts
+        shell: bash
+        run: |
+          if [[ "${{ steps.cache-go-artifacts.outputs.cache-hit }}" == "true" ]]; then
+            tar xzf go-artifacts.tgz
+          fi
+          # Simulate download-artifact layout expected by deploy scripts
+          ART="download-artifact/Throne-go-${{ matrix.cross_os }}-${{ matrix.cross_arch }}"
+          mkdir -p "$ART"
+          tar czf "$ART/artifacts.tgz" ./deployment
+
+      # ══════════════════════════════════════════════════════════════════════
+      #   Stage B — C++ GUI build
+      # ══════════════════════════════════════════════════════════════════════
 
       # ── MSVC (Windows only) ──
       - name: Install MSVC
         if: matrix.os_label == 'windows'
         uses: ilammy/msvc-dev-cmd@v1.13.0
         with:
-          arch: ${{ matrix.arch }}
+          arch: x86_64
 
       # ── ccache installation ──
       - name: Install ccache
@@ -194,9 +196,9 @@ jobs:
           path: |
             ~/.ccache
             ~/AppData/Local/ccache
-          key: ccache-${{ matrix.os_label }}-${{ matrix.arch }}-${{ github.sha }}
+          key: ccache-${{ matrix.os_label }}-${{ matrix.cross_arch }}-${{ github.sha }}
           restore-keys: |
-            ccache-${{ matrix.os_label }}-${{ matrix.arch }}-
+            ccache-${{ matrix.os_label }}-${{ matrix.cross_arch }}-
 
       # ── Qt 6 via aqtinstall ──
       - name: Install Qt 6
@@ -205,7 +207,7 @@ jobs:
           version: ${{ env.QT_VERSION }}
           setup-python: true
           cache: true
-          cache-key-prefix: Qt-${{ env.QT_VERSION }}-${{ matrix.os_label }}-${{ matrix.arch }}
+          cache-key-prefix: Qt-${{ env.QT_VERSION }}-${{ matrix.os_label }}-${{ matrix.cross_arch }}
 
       # ── OpenSSL (Windows only) ──
       - name: OpenSSL cache (Windows)
@@ -214,7 +216,7 @@ jobs:
         uses: actions/cache@v4.2.3
         with:
           path: C:/vcpkg/installed/x64-windows-static
-          key: OpenSSL-${{ matrix.os_label }}-${{ matrix.arch }}
+          key: OpenSSL-${{ matrix.os_label }}-${{ matrix.cross_arch }}
 
       - name: Install OpenSSL (Windows)
         if: matrix.os_label == 'windows' && steps.cache-openssl.outputs.cache-hit != 'true'
@@ -223,10 +225,7 @@ jobs:
           echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
           vcpkg install openssl:x64-windows-static
 
-      # ══════════════════════════════════════════════════════════════════════
-      #   Configure & Build
-      # ══════════════════════════════════════════════════════════════════════
-
+      # ── Configure & Build ──
       - name: Configure & Build (Windows)
         if: matrix.os_label == 'windows'
         shell: bash
@@ -279,18 +278,18 @@ jobs:
         shell: bash
         run: tar czvf artifacts.tgz ./deployment
 
-      - name: Upload C++ artifact
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4.6.2
         with:
-          name: Throne-${{ github.sha }}-${{ matrix.os_label }}-${{ matrix.arch }}-Qt${{ env.QT_VERSION }}
+          name: Throne-${{ github.sha }}-${{ matrix.os_label }}-${{ matrix.cross_arch }}-Qt${{ env.QT_VERSION }}
           path: artifacts.tgz
 
-  # ─── Job 4: Release ──────────────────────────────────────────────────────
+  # ─── Job 3: Release ──────────────────────────────────────────────────────
   release:
     name: "Pack & Publish (amd64)"
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    needs: [build-cpp]
+    needs: [build]
     permissions:
       contents: write
       actions: read

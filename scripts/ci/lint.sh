@@ -11,7 +11,9 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-LINT_LOG="${REPO_ROOT}/lint-report.log"
+LINT_DIR="${REPO_ROOT}/lint-report"
+mkdir -p "${LINT_DIR}"
+LINT_LOG="${LINT_DIR}/lint-report.log"
 EXIT_CODE=0
 
 echo "═══════════════════════════════════════════════════"
@@ -35,7 +37,7 @@ echo ">> clang-format version: $(clang-format --version)"
 # ─── cppcheck — static analysis ──────────────────────────────────────────────
 echo ""
 echo ">> Running cppcheck on src/ and include/..."
-CPPCHECK_REPORT="${REPO_ROOT}/cppcheck-report.xml"
+CPPCHECK_REPORT="${LINT_DIR}/cppcheck-report.xml"
 
 cppcheck \
     --enable=warning,performance,portability \
@@ -111,7 +113,8 @@ fi
 # ─── Summary ──────────────────────────────────────────────────────────────────
 echo ""
 echo "═══════════════════════════════════════════════════"
-echo " Lint complete. Report: ${LINT_LOG}"
+echo " Lint complete. Report dir: ${LINT_DIR}"
+echo " lint log:      ${LINT_LOG}"
 echo " cppcheck XML:  ${CPPCHECK_REPORT}"
 echo " Exit code:     ${EXIT_CODE}"
 echo "═══════════════════════════════════════════════════"
