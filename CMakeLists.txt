@@ -18,7 +18,10 @@ endif()
 # ═══════════════════════════════════════════════════════════════════════════════
 # Qt 6 — strictly required, no Qt 5 fallback
 # ═══════════════════════════════════════════════════════════════════════════════
-find_package(Qt6 REQUIRED COMPONENTS Widgets Network Concurrent LinguistTools DBus)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Network Concurrent LinguistTools)
+if (NOT WIN32)
+    find_package(Qt6 REQUIRED COMPONENTS DBus)
+endif()
 
 message(STATUS "[Throne] Qt6 version: ${Qt6_VERSION}")
 if (Qt6_VERSION VERSION_LESS "6.5.0")
@@ -404,7 +407,8 @@ endforeach()
 # Target Link
 
 target_link_libraries(Throne PRIVATE
-        Qt6::Widgets Qt6::Network Qt6::DBus Qt6::Concurrent
+        Qt6::Widgets Qt6::Network Qt6::Concurrent
+        $<$<NOT:$<PLATFORM_ID:Windows>>:Qt6::DBus>
         Threads::Threads
         ${NKR_EXTERNAL_TARGETS}
         ${PLATFORM_LIBRARIES}

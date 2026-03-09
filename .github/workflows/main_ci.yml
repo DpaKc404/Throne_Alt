@@ -135,38 +135,13 @@ jobs:
           key: ccache-${{ matrix.os_label }}-${{ github.sha }}
           restore-keys: ccache-${{ matrix.os_label }}-
 
-      # ── Qt (platform-specific) ─────────────────────────────────────────
-      - name: Install Qt (Linux)
-        if: matrix.os_label == 'linux'
+      # ── Qt ─────────────────────────────────────────────────────────────
+      - name: Install Qt
         uses: jurplel/install-qt-action@v4.3.0
         with:
           version: ${{ env.QT_VERSION }}
           cache: true
-          cache-key-prefix: qt-linux
-
-      - name: Cache static Qt + OpenSSL (Windows)
-        if: matrix.os_label == 'windows'
-        id: cache-win-deps
-        uses: actions/cache@v4.2.3
-        with:
-          path: |
-            qt6/build
-            C:/vcpkg/installed/x64-windows-static
-          key: win-deps-Qt${{ env.QT_VERSION }}-${{ hashFiles('script/build_qt_static_windows.bat') }}
-
-      - name: Build Windows dependencies
-        if: matrix.os_label == 'windows' && steps.cache-win-deps.outputs.cache-hit != 'true'
-        shell: cmd
-        run: |
-          set VCPKG_ROOT=%VCPKG_INSTALLATION_ROOT%
-          echo VCPKG_ROOT=%VCPKG_INSTALLATION_ROOT%>> %GITHUB_ENV%
-          vcpkg install openssl:x64-windows-static
-          call .\script\build_qt_static_windows.bat ${{ env.QT_VERSION }}
-
-      - name: Set VCPKG_ROOT (Windows, from cache)
-        if: matrix.os_label == 'windows' && steps.cache-win-deps.outputs.cache-hit == 'true'
-        shell: bash
-        run: echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> "$GITHUB_ENV"
+          cache-key-prefix: qt-${{ matrix.os_label }}
 
       # ── Configure, Build, Deploy ───────────────────────────────────────
       - name: Build Throne
@@ -182,10 +157,7 @@ jobs:
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           )
 
-          if [[ "${{ matrix.os_label }}" == "windows" ]]; then
-            export CMAKE_PREFIX_PATH="$PWD/../qt6/build/lib/cmake"
-            export OPENSSL_ROOT_DIR="C:/vcpkg/installed/x64-windows-static"
-          else
+          if [[ "${{ matrix.os_label }}" != "windows" ]]; then
             CMAKE_ARGS+=(-DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++")
           fi
 
