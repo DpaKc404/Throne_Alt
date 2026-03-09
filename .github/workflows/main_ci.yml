@@ -191,8 +191,9 @@ jobs:
           restore-keys: |
             ccache-${{ matrix.os_label }}-${{ matrix.cross_arch }}-
 
-      # ── Qt 6 via aqtinstall ──
-      - name: Install Qt 6
+      # ── Qt 6 via aqtinstall (Linux only — Windows uses static Qt below) ──
+      - name: Install Qt 6 (Linux)
+        if: matrix.os_label != 'windows'
         uses: jurplel/install-qt-action@v4.3.0
         with:
           version: ${{ env.QT_VERSION }}
@@ -201,6 +202,12 @@ jobs:
           cache-key-prefix: Qt-${{ env.QT_VERSION }}-${{ matrix.os_label }}-${{ matrix.cross_arch }}
 
       # ── OpenSSL (Windows only) ──
+      - name: Set VCPKG_ROOT (Windows)
+        if: matrix.os_label == 'windows'
+        shell: powershell
+        run: |
+          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
+
       - name: OpenSSL cache (Windows)
         id: cache-openssl
         if: matrix.os_label == 'windows'
@@ -212,15 +219,28 @@ jobs:
       - name: Install OpenSSL (Windows)
         if: matrix.os_label == 'windows' && steps.cache-openssl.outputs.cache-hit != 'true'
         shell: powershell
-        run: |
-          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
-          vcpkg install openssl:x64-windows-static
+        run: vcpkg install openssl:x64-windows-static
+
+      # ── Static Qt 6 (Windows only — produces single-exe with no DLL deps) ──
+      - name: Qt static cache (Windows)
+        id: cache-static-qt
+        if: matrix.os_label == 'windows'
+        uses: actions/cache@v4.2.3
+        with:
+          path: qt6/build
+          key: QtStaticCache-${{ matrix.os_label }}-${{ matrix.cross_arch }}-Qt${{ env.QT_VERSION }}-${{ hashFiles('script/build_qt_static_windows.bat') }}
+
+      - name: Build static Qt (Windows)
+        if: matrix.os_label == 'windows' && steps.cache-static-qt.outputs.cache-hit != 'true'
+        shell: cmd
+        run: .\script\build_qt_static_windows.bat ${{ env.QT_VERSION }}
 
       # ── Configure & Build ──
       - name: Configure & Build (Windows)
         if: matrix.os_label == 'windows'
         shell: bash
         run: |
+          export CMAKE_PREFIX_PATH=$PWD/qt6/build/lib/cmake
           export OPENSSL_ROOT_DIR="C:/vcpkg/installed/x64-windows-static"
           mkdir -p build && cd build
           curl -fLso srslist.h "https://raw.githubusercontent.com/throneproj/routeprofiles/rule-set/srslist.h"

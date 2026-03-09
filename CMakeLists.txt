@@ -18,7 +18,7 @@ endif()
 # ═══════════════════════════════════════════════════════════════════════════════
 # Qt 6 — strictly required, no Qt 5 fallback
 # ═══════════════════════════════════════════════════════════════════════════════
-find_package(Qt6 REQUIRED COMPONENTS Widgets Network LinguistTools DBus)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Network Concurrent LinguistTools DBus)
 
 message(STATUS "[Throne] Qt6 version: ${Qt6_VERSION}")
 if (Qt6_VERSION VERSION_LESS "6.5.0")

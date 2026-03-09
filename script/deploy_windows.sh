@@ -34,19 +34,25 @@ tar xvzf artifacts.tgz -C ../../
 cd ../..
 
 #### deploy Qt runtime DLLs (shared Qt only) ####
-# Check if Throne.exe has Qt6Core.dll dependency (shared build)
+# Detect whether this is a shared or static Qt build.
+# MSYS_NO_PATHCONV=1 prevents Git Bash from mangling /dependents into a path.
+HAS_QT_DLL=0
 if command -v dumpbin &>/dev/null; then
-  HAS_QT_DLL=$(dumpbin /dependents $DEST/Throne.exe 2>/dev/null | grep -ci "Qt6" || true)
+  HAS_QT_DLL=$(MSYS_NO_PATHCONV=1 dumpbin //dependents "$DEST/Throne.exe" 2>/dev/null | grep -ci "Qt6" || true)
 elif command -v objdump &>/dev/null; then
-  HAS_QT_DLL=$(objdump -p $DEST/Throne.exe 2>/dev/null | grep -ci "Qt6" || true)
-else
-  # Assume shared build — run windeployqt just in case
+  HAS_QT_DLL=$(objdump -p "$DEST/Throne.exe" 2>/dev/null | grep -ci "Qt6" || true)
+fi
+
+# Fallback: if detection returned 0 but windeployqt exists, assume shared Qt.
+# Static Qt is rare in CI; failing to deploy DLLs is worse than a harmless no-op.
+if [[ "$HAS_QT_DLL" -eq 0 ]] && command -v windeployqt &>/dev/null; then
+  echo "=== DLL detection inconclusive, windeployqt found — assuming shared Qt ==="
   HAS_QT_DLL=1
 fi
 
 if [[ "$HAS_QT_DLL" -gt 0 ]]; then
   echo "=== Shared Qt build detected, running windeployqt ==="
-  pushd $DEST
+  pushd "$DEST"
   windeployqt Throne.exe \
     --no-translations \
     --no-system-d3d-compiler \
@@ -55,7 +61,7 @@ if [[ "$HAS_QT_DLL" -gt 0 ]]; then
     --verbose 2
   popd
   # Remove unnecessary DX shader compiler DLLs
-  rm -f $DEST/dxcompiler.dll $DEST/dxil.dll
+  rm -f "$DEST/dxcompiler.dll" "$DEST/dxil.dll"
 else
   echo "=== Static Qt build detected — no DLL deployment needed ==="
 fi
