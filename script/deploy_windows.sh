@@ -21,6 +21,9 @@ mkdir -p $DEST
 cp $BUILD/Throne.exe $DEST
 cp $BUILD/*pdb $DEST || true
 
+#### copy icon ####
+cp ./res/public/Throne.png $DEST 2>/dev/null || true
+
 #### copy translations to lang/ ####
 if [ -d "$BUILD/lang" ]; then
   mkdir -p $DEST/lang
