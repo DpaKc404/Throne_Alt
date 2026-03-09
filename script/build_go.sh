@@ -58,5 +58,7 @@ pushd gen
 protoc -I . --go_out=. --go-grpc_out=. libcore.proto
 popd
 VERSION_SINGBOX=$(go list -m -f '{{.Version}}' github.com/sagernet/sing-box)
-$GOCMD build -v -o $DEST -trimpath -ldflags "-w -s -X 'github.com/sagernet/sing-box/constant.Version=${VERSION_SINGBOX}' -checklinkname=0" -tags "with_clash_api,with_gvisor,with_quic,with_wireguard,with_utls,with_dhcp,with_tailscale,badlinkname,tfogo_checklinkname0"
+CORE_BIN="NekoCore"
+if [[ "$GOOS" == "windows" ]]; then CORE_BIN="NekoCore.exe"; fi
+$GOCMD build -v -o $DEST/$CORE_BIN -trimpath -ldflags "-w -s -X 'github.com/sagernet/sing-box/constant.Version=${VERSION_SINGBOX}' -checklinkname=0" -tags "with_clash_api,with_gvisor,with_quic,with_wireguard,with_utls,with_dhcp,with_tailscale,badlinkname,tfogo_checklinkname0"
 popd

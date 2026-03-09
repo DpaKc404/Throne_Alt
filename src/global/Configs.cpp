@@ -412,7 +412,7 @@ namespace Configs {
     // System Utils
 
     QString FindCoreRealPath() {
-        auto fn = QApplication::applicationDirPath() + "/Core";
+        auto fn = QApplication::applicationDirPath() + "/NekoCore";
 #ifdef Q_OS_WIN
         fn += ".exe";
 #endif

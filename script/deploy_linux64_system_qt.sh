@@ -23,7 +23,7 @@ cd download-artifact
 cd *linux-$ARCH
 tar xvzf artifacts.tgz -C ../../
 cd ../..
-cp deployment/linux-$ARCH/Core $DEST
+cp deployment/linux-$ARCH/NekoCore $DEST
 rm -rf deployment/linux-$ARCH
 
 # handle debug info

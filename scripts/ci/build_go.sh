@@ -90,7 +90,9 @@ VERSION_SINGBOX=$(go list -m -f '{{.Version}}' github.com/sagernet/sing-box)
 echo ">> sing-box version: ${VERSION_SINGBOX}"
 
 # Build with all required tags
-go build -v -o "${DEST}" -trimpath \
+CORE_BIN="NekoCore"
+if [[ "${GOOS}" == "windows" ]]; then CORE_BIN="NekoCore.exe"; fi
+go build -v -o "${DEST}/${CORE_BIN}" -trimpath \
     -ldflags "-w -s -X 'github.com/sagernet/sing-box/constant.Version=${VERSION_SINGBOX}' -checklinkname=0" \
     -tags "with_clash_api,with_gvisor,with_quic,with_wireguard,with_utls,with_dhcp,with_tailscale,badlinkname,tfogo_checklinkname0"
 
