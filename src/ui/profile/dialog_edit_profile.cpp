@@ -138,9 +138,9 @@ DialogEditProfile::DialogEditProfile(const QString &_type, int profileOrGroupId,
     emit ui->security->currentTextChanged(ui->security->currentText());
 
     // for fragment
-    connect(ui->tls_frag, &QCheckBox::stateChanged, this, [=,this](bool state)
+    connect(ui->tls_frag, &QCheckBox::checkStateChanged, this, [=,this](Qt::CheckState state)
     {
-        ui->tls_frag_fall_delay->setEnabled(state);
+        ui->tls_frag_fall_delay->setEnabled(state == Qt::Checked);
     });
 
     // mux setting changed

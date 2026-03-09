@@ -607,7 +607,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
             MW_show_log("File too large, will not process it");
             return;
         }
-        file.open(QIODevice::ReadOnly);
+        if (!file.open(QIODevice::ReadOnly)) return;
         auto contents = file.readAll();
         file.close();
         Subscription::groupUpdater->AsyncUpdate(contents);
@@ -668,7 +668,7 @@ void MainWindow::dropEvent(QDropEvent* event)
                     parseQrImage(&qpx);
                 } else if (auto file = QFile(url.toLocalFile()); file.exists())
                 {
-                    file.open(QFile::ReadOnly);
+                    if (!file.open(QFile::ReadOnly)) continue;
                     if (file.size() > 50 * 1024 * 1024)
                     {
                         file.close();

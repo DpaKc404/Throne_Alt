@@ -87,12 +87,12 @@ DialogManageRoutes::DialogManageRoutes(QWidget *parent) : QDialog(parent), ui(ne
     ui->local_override->setText(Configs::dataStore->core_box_underlying_dns);
     ui->enable_fakeip->setChecked(Configs::dataStore->fake_dns);
     //
-    connect(ui->use_dns_object, &QCheckBox::stateChanged, this, [=,this](int state) {
+    connect(ui->use_dns_object, &QCheckBox::checkStateChanged, this, [=,this](Qt::CheckState state) {
         auto useDNSObject = state == Qt::Checked;
         ui->simple_dns_box->setDisabled(useDNSObject);
         ui->dns_object->setDisabled(!useDNSObject);
     });
-    ui->use_dns_object->stateChanged(Qt::Unchecked); // uncheck to uncheck
+    ui->use_dns_object->checkStateChanged(Qt::Unchecked); // uncheck to uncheck
     connect(ui->dns_document, &QPushButton::clicked, this, [=,this] {
         MessageBoxInfo("DNS", dnsHelpDocumentUrl);
     });
@@ -161,12 +161,12 @@ DialogManageRoutes::DialogManageRoutes(QWidget *parent) : QDialog(parent), ui(ne
     ui->redirect_listenport->setValidator(QRegExpValidator_Number);
     ui->redirect_listenport->setText(Int2String(Configs::dataStore->redirect_listen_port));
 
-    connect(ui->dnshijack_enable, &QCheckBox::stateChanged, this, [=,this](bool state) {
-        set_dns_hijack_enability(state);
+    connect(ui->dnshijack_enable, &QCheckBox::checkStateChanged, this, [=,this](Qt::CheckState state) {
+        set_dns_hijack_enability(state == Qt::Checked);
     });
-    connect(ui->redirect_enable, &QCheckBox::stateChanged, this, [=,this](bool state) {
-        ui->redirect_listenaddr->setEnabled(state);
-        ui->redirect_listenport->setEnabled(state);
+    connect(ui->redirect_enable, &QCheckBox::checkStateChanged, this, [=,this](Qt::CheckState state) {
+        ui->redirect_listenaddr->setEnabled(state == Qt::Checked);
+        ui->redirect_listenport->setEnabled(state == Qt::Checked);
     });
 
     ADD_ASTERISK(this)

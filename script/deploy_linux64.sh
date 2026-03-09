@@ -38,9 +38,9 @@ wget https://github.com/linuxdeploy/linuxdeploy/releases/download/1-alpha-202502
 wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/1-alpha-20250213-1/linuxdeploy-plugin-qt-$ARCH1.AppImage
 chmod +x linuxdeploy-$ARCH1.AppImage linuxdeploy-plugin-qt-$ARCH1.AppImage
 
-export EXTRA_QT_PLUGINS="iconengines;wayland-shell-integration;wayland-decoration-client;"
-export EXTRA_PLATFORM_PLUGINS="libqwayland.so;"
-./linuxdeploy-$ARCH1.AppImage --appdir $DEST --executable $DEST/Throne --plugin qt
+export EXTRA_QT_PLUGINS="iconengines;wayland-shell-integration;wayland-decoration-client"
+export EXTRA_PLATFORM_PLUGINS="libqwayland.so"
+./linuxdeploy-$ARCH1.AppImage --appdir $DEST --executable $DEST/Throne --plugin qt 2>&1 | grep -v 'WARNING: Could not find copyright' | grep -v 'WARNING: Not calling strip' | grep -v 'WARNING: Using deprecated' || true
 rm linuxdeploy-$ARCH1.AppImage linuxdeploy-plugin-qt-$ARCH1.AppImage
 cd $DEST
 rm -r ./usr/translations ./usr/bin ./usr/share ./apprun-hooks

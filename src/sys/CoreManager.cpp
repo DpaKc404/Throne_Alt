@@ -72,7 +72,7 @@ namespace Configs_sys {
     }
 
     void CoreManager::downloadLatestCore(std::function<void(bool, const QString &)> callback) {
-        QtConcurrent::run([this, cb = std::move(callback)] {
+        (void) QtConcurrent::run([this, cb = std::move(callback)] {
             QString platform;
 #if defined(Q_OS_WIN)
             platform = "windows-amd64";
