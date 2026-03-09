@@ -51,7 +51,6 @@ jobs:
   # ─── Build (Go + C++ in one job) ─────────────────────────────────────────
   build:
     name: "${{ matrix.os_label }}"
-    timeout-minutes: 60
     permissions: { contents: read }
     strategy:
       fail-fast: false
