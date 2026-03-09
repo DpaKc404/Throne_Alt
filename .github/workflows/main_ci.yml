@@ -93,6 +93,7 @@ jobs:
             PROTOC_VER="31.1"
             curl -fLO --retry 3 "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VER}/protoc-${PROTOC_VER}-win64.zip"
             unzip "protoc-${PROTOC_VER}-win64.zip" -d protoc_install
+            export PATH="$PWD/protoc_install/bin:$PATH"
             echo "$PWD/protoc_install/bin" >> "$GITHUB_PATH"
           else
             ./scripts/ci/setup_go.sh
