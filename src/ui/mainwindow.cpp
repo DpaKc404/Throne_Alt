@@ -56,6 +56,7 @@
 #include <3rdparty/qv2ray/v2/proxy/QvProxyConfigurator.hpp>
 #include <include/global/HTTPRequestHelper.hpp>
 #include "include/global/DeviceDetailsHelper.hpp"
+#include "include/api/CoreVersionParser.hpp"
 
 #include "include/sys/macos/MacOS.h"
 
@@ -98,7 +99,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     // setup log
     ui->splitter->restoreState(DecodeB64IfValid(Configs::dataStore->splitter_state));
-    new SyntaxHighlighter(isDarkMode() || Configs::dataStore->theme.toLower() == "qdarkstyle", qvLogDocument);
+    new SyntaxHighlighter(isDarkMode(), qvLogDocument);
     qvLogDocument->setUndoRedoEnabled(false);
     ui->masterLogBrowser->setUndoRedoEnabled(false);
     ui->masterLogBrowser->setDocument(qvLogDocument);
@@ -114,9 +115,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         if (theme.toLower().contains("vista")) {
             // light themes
             new SyntaxHighlighter(false, qvLogDocument);
-        } else if (theme.toLower().contains("qdarkstyle")) {
-            // dark themes
-            new SyntaxHighlighter(true, qvLogDocument);
         } else {
             // bi-mode themes, follow system preference
             new SyntaxHighlighter(isDarkMode(), qvLogDocument);
@@ -194,6 +192,18 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     }
 
     parallelCoreCallPool->setMaxThreadCount(10); // constant value
+
+    // Core version detection
+    auto *versionParser = CoreVersionParser::instance();
+    connect(versionParser, &CoreVersionParser::versionParsed, this, [this](const CoreVersionInfo &info) {
+        QStringList parts;
+        if (info.singboxAvailable) parts << "sb:" + info.singboxVersion;
+        if (info.xrayAvailable) parts << "xr:" + info.xrayVersion;
+        core_version_suffix = parts.isEmpty() ? QString() : "(" + parts.join(" ") + ")";
+        refresh_status();
+    });
+    versionParser->requestVersions();
+
     //
     connect(ui->menu_start, &QAction::triggered, this, [=,this]() { profile_start(); });
     connect(ui->menu_stop, &QAction::triggered, this, [=,this]() { profile_stop(false, false, true); });
@@ -1422,6 +1432,7 @@ void MainWindow::refresh_status(const QString &traffic_update) {
         if (Configs::dataStore->spmode_vpn && Configs::dataStore->spmode_system_proxy) tt << "[Tun+" + tr("System Proxy") + "]";
         tt << software_name;
         if (!isTray) tt << QString(NKR_VERSION);
+        if (!core_version_suffix.isEmpty() && !isTray) tt << core_version_suffix;
         if (!Configs::dataStore->active_routing.isEmpty() && Configs::dataStore->active_routing != "Default") {
             tt << "[" + Configs::dataStore->active_routing + "]";
         }

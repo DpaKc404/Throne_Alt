@@ -248,7 +248,6 @@ set(PROJECT_SOURCES
         ${QV2RAY_RC}
         include/dataStore/RouteEntity.h
         src/dataStore/RouteEntity.cpp
-        res/darkstyle.qrc
         src/ui/profile/edit_ssh.cpp
         include/ui/profile/edit_ssh.h
         include/ui/profile/edit_ssh.ui

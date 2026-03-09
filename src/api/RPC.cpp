@@ -373,25 +373,57 @@ namespace API {
         }
     }
 
-    QString Client::Clash2Singbox(bool* rpcOK, const QString& config) const
+    libcore::IPTestResp Client::IPTest(bool *rpcOK, const libcore::IPTestRequest &request)
     {
-        libcore::Clash2SingboxRequest request;
-        libcore::Clash2SingboxResponse reply;
-        request.clash_config = config.toStdString();
+        libcore::IPTestResp reply;
         std::vector<uint8_t> resp;
-        auto status = default_grpc_channel->Call("Clash2Singbox", spb::pb::serialize<std::string>(request), resp);
+        auto status = default_grpc_channel->Call("IPTest", spb::pb::serialize<std::string>(request), resp);
 
         if (status == QNetworkReply::NoError) {
-            reply = spb::pb::deserialize<libcore::Clash2SingboxResponse>(resp);
+            reply = spb::pb::deserialize<libcore::IPTestResp>(resp);
+            *rpcOK = true;
+            return reply;
+        } else {
+            NOT_OK
+            return {};
+        }
+    }
+
+    libcore::QueryIPTestResponse Client::QueryIPTest(bool *rpcOK)
+    {
+        const libcore::EmptyReq request;
+        libcore::QueryIPTestResponse reply;
+        std::vector<uint8_t> resp;
+        auto status = default_grpc_channel->Call("QueryIPTest", spb::pb::serialize<std::string>(request), resp);
+
+        if (status == QNetworkReply::NoError) {
+            reply = spb::pb::deserialize<libcore::QueryIPTestResponse>(resp);
+            *rpcOK = true;
+            return reply;
+        } else {
+            NOT_OK
+            return {};
+        }
+    }
+
+    libcore::GenWgKeyPairResponse Client::GenWgKeyPair(bool *rpcOK)
+    {
+        const libcore::EmptyReq request;
+        libcore::GenWgKeyPairResponse reply;
+        std::vector<uint8_t> resp;
+        auto status = default_grpc_channel->Call("GenWgKeyPair", spb::pb::serialize<std::string>(request), resp);
+
+        if (status == QNetworkReply::NoError) {
+            reply = spb::pb::deserialize<libcore::GenWgKeyPairResponse>(resp);
             *rpcOK = true;
             QString error = QString::fromStdString(reply.error.value());
             if (!error.isEmpty()) {
-                MW_show_log(QString("Failed to convert Clash config:\n") + error);
+                MW_show_log(QString("Failed to generate WireGuard key pair:\n") + error);
             }
-            return QString::fromStdString(reply.singbox_config.value());
+            return reply;
         } else {
             NOT_OK
-            return "";
+            return {};
         }
     }
 

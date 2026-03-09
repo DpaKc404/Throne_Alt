@@ -59,9 +59,9 @@ void CoreVersionParser::requestVersions() {
             // 5-second guard — core should respond instantly
             if (proc.waitForFinished(5000)) {
                 auto output = QString::fromUtf8(proc.readAllStandardOutput());
-                // Example: "sing-box version 1.12.13"
+                // Example: "sing-box: 1.13.2" or "sing-box version 1.13.2"
                 static const QRegularExpression rxSingbox(
-                    QStringLiteral(R"(sing-box\s+version\s+([\d.]+(?:-\w+)?))")
+                    QStringLiteral(R"(sing-box[:\s]+(?:version\s+)?([\d.]+(?:-\w+)?))")
                 );
                 auto m = rxSingbox.match(output);
                 if (m.hasMatch()) {
@@ -70,9 +70,9 @@ void CoreVersionParser::requestVersions() {
                     info.singboxStatus = QStringLiteral("stopped"); // binary exists
                 }
 
-                // Example: "Xray 1.251208.0"
+                // Example: "Xray-core: 1.251208.0" or "Xray 1.251208.0"
                 static const QRegularExpression rxXray(
-                    QStringLiteral(R"(Xray\s+([\d.]+))")
+                    QStringLiteral(R"(Xray(?:-core)?[:\s]+([\d.]+))")
                 );
                 auto mx = rxXray.match(output);
                 if (mx.hasMatch()) {

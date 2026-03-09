@@ -20,8 +20,10 @@ service LibcoreService {
   rpc SpeedTest(SpeedTestRequest) returns(SpeedTestResponse);
   rpc QuerySpeedTest(EmptyReq) returns(QuerySpeedTestResponse);
   rpc QueryCountryTest(EmptyReq) returns(QueryCountryTestResponse);
+  rpc IPTest(IPTestRequest) returns (IPTestResp);
+  rpc QueryIPTest(EmptyReq) returns (QueryIPTestResponse);
   //
-  rpc Clash2Singbox(Clash2SingboxRequest) returns(Clash2SingboxResponse);
+  rpc GenWgKeyPair(EmptyReq) returns (GenWgKeyPairResponse);
 }
 
 message EmptyReq {}
@@ -43,6 +45,7 @@ message LoadConfigReq {
   optional bool extra_no_out = 8 [default = false];
   optional bool need_xray = 9 [default = false];
   optional string xray_config = 10 [default = ""];
+  optional string tun_ipv4_cidr = 11 [default = ""];
 }
 
 message URLTestResp {
@@ -141,11 +144,33 @@ message QueryURLTestResponse {
   repeated URLTestResp results = 1;
 }
 
-message Clash2SingboxRequest {
-  optional string clash_config = 1 [default = ""];
+message IPTestRes {
+  optional string outbound_tag = 1 [default = ""];
+  optional string ip = 2 [default = "" ];
+  optional string country_code = 3 [default = ""];
+  optional string error = 4 [default = ""];
 }
 
-message Clash2SingboxResponse {
-  optional string singbox_config = 1 [default = ""];
-  optional string error = 2 [default = ""];
+message IPTestRequest {
+  optional string config = 1 [default = ""];
+  repeated string outbound_tags = 2;
+  optional bool use_default_outbound = 3 [default = false];
+  optional int32 max_concurrency = 4 [default = 0];
+  optional int32 test_timeout_ms = 5 [default = 0];
+  optional bool need_xray = 6 [default = false];
+  optional string xray_config = 7 [default = ""];
+}
+
+message IPTestResp {
+  repeated IPTestRes results = 1;
+}
+
+message QueryIPTestResponse {
+  repeated IPTestRes results = 1;
+}
+
+message GenWgKeyPairResponse {
+  optional string private_key = 1 [default = ""];
+  optional string public_key = 2 [default = ""];
+  optional string error = 3 [default = ""];
 }

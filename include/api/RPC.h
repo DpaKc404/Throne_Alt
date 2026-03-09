@@ -42,7 +42,11 @@ namespace API {
 
         libcore::QueryCountryTestResponse QueryCountryTestResults(bool *rpcOK);
 
-        QString Clash2Singbox(bool *rpcOK, const QString& config) const;
+        libcore::IPTestResp IPTest(bool *rpcOK, const libcore::IPTestRequest &request);
+
+        libcore::QueryIPTestResponse QueryIPTest(bool *rpcOK);
+
+        libcore::GenWgKeyPairResponse GenWgKeyPair(bool *rpcOK);
 
     private:
         std::function<std::unique_ptr<QtGrpc::Http2GrpcChannelPrivate>()> make_grpc_channel;

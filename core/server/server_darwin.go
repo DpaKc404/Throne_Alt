@@ -1,7 +1,7 @@
 package main
 
 import (
-	"Core/gen"
+	"ThroneCore/gen"
 	"context"
 )
 

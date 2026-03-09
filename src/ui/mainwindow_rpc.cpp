@@ -496,6 +496,9 @@ void MainWindow::profile_start(int _id) {
         req.disable_stats = Configs::dataStore->disable_traffic_stats;
         req.xray_config = QJsonObject2QString(result->xrayConfig, true).toStdString();
         req.need_xray = !result->xrayConfig.isEmpty();
+        if (Configs::dataStore->spmode_vpn) {
+            req.tun_ipv4_cidr = "172.19.0.1/24";
+        }
         if (ent->type == "extracore")
         {
             req.need_extra_process = true;

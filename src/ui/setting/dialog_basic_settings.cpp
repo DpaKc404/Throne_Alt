@@ -118,7 +118,6 @@ DialogBasicSettings::DialogBasicSettings(QWidget *parent)
     });
     //
     ui->theme->addItems(QStyleFactory::keys());
-    ui->theme->addItem("QDarkStyle");
     ui->enable_custom_icon->setChecked(Configs::dataStore->use_custom_icons);
     connect(ui->select_custom_icon, &QPushButton::clicked, this, [=, this] {
         auto n = QMessageBox::information(this, tr("Custom Icon Manual"), tr(Configs::Information::CustomIconManual.toStdString().c_str()), QMessageBox::Open | QMessageBox::Cancel);

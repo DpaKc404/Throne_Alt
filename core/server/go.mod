@@ -1,22 +1,21 @@
-module Core
+module ThroneCore
 
 go 1.25
 
 require (
 	github.com/Mahdi-zarei/speedtest-go v1.7.13-0.20260107171856-79c565dfd83a
 	github.com/dustin/go-humanize v1.0.1
-	github.com/gofrs/uuid/v5 v5.3.2
+	github.com/gofrs/uuid/v5 v5.4.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
-	github.com/sagernet/sing v0.8.0-beta.6.0.20251207063731-56fd482ce1c6
-	github.com/sagernet/sing-box v1.12.13-0.20251207074715-76d447d7d99d
-	github.com/sagernet/sing-tun v0.8.0-beta.11
-	github.com/spf13/cobra v1.10.1
-	github.com/throneproj/clash2singbox v0.1.5-0.20251204215643-2a0d5666be7e
+	github.com/sagernet/sing v0.8.2
+	github.com/sagernet/sing-box v1.13.2
+	github.com/sagernet/sing-tun v0.8.2
+	github.com/spf13/cobra v1.10.2
 	github.com/xtls/xray-core v1.251208.0
-	golang.org/x/sys v0.38.0
-	google.golang.org/grpc v1.77.0
-	google.golang.org/protobuf v1.36.10
-	gopkg.in/yaml.v3 v3.0.1
+	golang.org/x/crypto v0.48.0
+	golang.org/x/sys v0.41.0
+	google.golang.org/grpc v1.79.1
+	google.golang.org/protobuf v1.36.11
 )
 
 require (
@@ -148,6 +147,4 @@ require (
 	lukechampine.com/blake3 v1.4.1 // indirect
 )
 
-replace github.com/sagernet/sing-box => github.com/Throneproj/sing-box v1.11.16-0.20251223023356-e2983d502732
-
-replace github.com/sagernet/wireguard-go => github.com/throneproj/wireguard-go v0.0.0-20251117142642-c1bcbc4da297
+replace github.com/sagernet/sing-box => github.com/Throneproj/sing-box v1.11.16-0.20260309060351-6abdf01d569e

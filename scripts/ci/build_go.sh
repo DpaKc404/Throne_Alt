@@ -91,8 +91,8 @@ echo ">> sing-box version: ${VERSION_SINGBOX}"
 
 # Build with all required tags
 go build -v -o "${DEST}" -trimpath \
-    -ldflags "-w -s -X 'github.com/sagernet/sing-box/constant.Version=${VERSION_SINGBOX}'" \
-    -tags "with_clash_api,with_gvisor,with_quic,with_wireguard,with_utls,with_dhcp,with_tailscale"
+    -ldflags "-w -s -X 'github.com/sagernet/sing-box/constant.Version=${VERSION_SINGBOX}' -checklinkname=0" \
+    -tags "with_clash_api,with_gvisor,with_quic,with_wireguard,with_utls,with_dhcp,with_tailscale,badlinkname,tfogo_checklinkname0"
 
 popd > /dev/null
 

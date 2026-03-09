@@ -1,32 +1,30 @@
 package main
 
 import (
-	"Core/gen"
-	"Core/internal/boxbox"
-	"Core/internal/boxmain"
-	"Core/internal/process"
-	"Core/internal/sys"
-	"Core/internal/xray"
+	"ThroneCore/gen"
+	"ThroneCore/internal/boxbox"
+	"ThroneCore/internal/boxmain"
+	"ThroneCore/internal/process"
+	"ThroneCore/internal/sys"
+	"ThroneCore/internal/wg"
+	"ThroneCore/internal/xray"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"net/netip"
+	"os"
+	"runtime"
+	"strings"
+	"time"
+
 	"github.com/google/shlex"
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/experimental/clashapi"
 	"github.com/sagernet/sing/common"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/sagernet/sing/service"
-	"github.com/throneproj/clash2singbox/convert"
-	"github.com/throneproj/clash2singbox/model"
-	"github.com/throneproj/clash2singbox/model/clash"
 	"github.com/xtls/xray-core/core"
-	"gopkg.in/yaml.v3"
-	"log"
-	"os"
-	"runtime"
-	"strings"
-	"time"
 )
 
 var boxInstance *boxbox.Box
@@ -47,11 +45,11 @@ func To[T any](v T) *T {
 	return &v
 }
 
-func (s *server) Start(_ context.Context, in *gen.LoadConfigReq) (out *gen.ErrorResp, _ error) {
-	out = &gen.ErrorResp{}
+func (s *server) Start(ctx context.Context, in *gen.LoadConfigReq) (out *gen.ErrorResp, _ error) {
 	var err error
 
 	defer func() {
+		out = &gen.ErrorResp{}
 		if err != nil {
 			out.Error = To(err.Error())
 			boxInstance = nil
@@ -125,22 +123,50 @@ func (s *server) Start(_ context.Context, in *gen.LoadConfigReq) (out *gen.Error
 		}
 		return
 	}
-	if runtime.GOOS == "darwin" && strings.Contains(*in.CoreConfig, "tun-in") && strings.Contains(*in.CoreConfig, "172.19.0.1/24") {
-		err := sys.SetSystemDNS("172.19.0.2", boxInstance.Network().InterfaceMonitor())
-		if err != nil {
+	if runtime.GOOS == "darwin" && in.GetTunIpv4Cidr() != "" {
+		stopAllCores := func() {
+			boxInstance.CloseWithTimeout(instanceCancel, time.Second*2, log.Println, true)
+			boxInstance = nil
+			if extraProcess != nil {
+				extraProcess.Stop()
+				extraProcess = nil
+			}
+			if xrayInstance != nil {
+				xrayInstance.Close()
+				xrayInstance = nil
+			}
+		}
+
+		tunCIDR := in.GetTunIpv4Cidr()
+		tunPrefix, parseErr := netip.ParsePrefix(tunCIDR)
+		if parseErr != nil || !tunPrefix.Addr().Is4() {
+			err = fmt.Errorf("invalid tun_ipv4_cidr %q", tunCIDR)
+			stopAllCores()
+			return
+		}
+
+		tunDNS := tunPrefix.Addr().Next()
+		if !tunDNS.IsValid() || !tunDNS.Is4() {
+			err = fmt.Errorf("got invalid DNS IP from tun_ipv4_cidr: %s", tunDNS)
+			stopAllCores()
+			return
+		}
+
+		if err := sys.SetSystemDNS(tunDNS.String(), boxInstance.Network().InterfaceMonitor()); err != nil {
 			log.Println("Failed to set system DNS:", err)
 		}
+
 		needUnsetDNS = true
 	}
 
 	return
 }
 
-func (s *server) Stop(_ context.Context, in *gen.EmptyReq) (out *gen.ErrorResp, _ error) {
-	out = &gen.ErrorResp{}
+func (s *server) Stop(ctx context.Context, in *gen.EmptyReq) (out *gen.ErrorResp, _ error) {
 	var err error
 
 	defer func() {
+		out = &gen.ErrorResp{}
 		if err != nil {
 			out.Error = To(err.Error())
 		}
@@ -157,7 +183,7 @@ func (s *server) Stop(_ context.Context, in *gen.EmptyReq) (out *gen.ErrorResp, 
 			log.Println("Failed to unset system DNS:", err)
 		}
 	}
-	boxInstance.CloseWithTimeout(instanceCancel, time.Second*2, log.Println)
+	boxInstance.CloseWithTimeout(instanceCancel, time.Second*2, log.Println, true)
 
 	boxInstance = nil
 
@@ -174,7 +200,7 @@ func (s *server) Stop(_ context.Context, in *gen.EmptyReq) (out *gen.ErrorResp, 
 	return
 }
 
-func (s *server) CheckConfig(_ context.Context, in *gen.LoadConfigReq) (*gen.ErrorResp, error) {
+func (s *server) CheckConfig(ctx context.Context, in *gen.LoadConfigReq) (*gen.ErrorResp, error) {
 	out := &gen.ErrorResp{}
 	err := boxmain.Check([]byte(*in.CoreConfig))
 	if err != nil {
@@ -184,7 +210,7 @@ func (s *server) CheckConfig(_ context.Context, in *gen.LoadConfigReq) (*gen.Err
 	return out, nil
 }
 
-func (s *server) Test(_ context.Context, in *gen.TestReq) (*gen.TestResp, error) {
+func (s *server) Test(ctx context.Context, in *gen.TestReq) (*gen.TestResp, error) {
 	out := &gen.TestResp{}
 	var testInstance *boxbox.Box
 	var xrayTestIntance *core.Instance
@@ -220,7 +246,7 @@ func (s *server) Test(_ context.Context, in *gen.TestReq) (*gen.TestResp, error)
 		if err != nil {
 			return nil, err
 		}
-		defer testInstance.CloseWithTimeout(cancel, 2*time.Second, log.Println)
+		defer testInstance.CloseWithTimeout(cancel, 2*time.Second, log.Println, false)
 	}
 
 	outboundTags := in.OutboundTags
@@ -252,14 +278,14 @@ func (s *server) Test(_ context.Context, in *gen.TestReq) (*gen.TestResp, error)
 	return out, nil
 }
 
-func (s *server) StopTest(_ context.Context, in *gen.EmptyReq) (*gen.EmptyResp, error) {
+func (s *server) StopTest(ctx context.Context, in *gen.EmptyReq) (*gen.EmptyResp, error) {
 	cancelTests()
 	testCtx, cancelTests = context.WithCancel(context.Background())
 
 	return &gen.EmptyResp{}, nil
 }
 
-func (s *server) QueryURLTest(_ context.Context, in *gen.EmptyReq) (*gen.QueryURLTestResponse, error) {
+func (s *server) QueryURLTest(ctx context.Context, in *gen.EmptyReq) (*gen.QueryURLTestResponse, error) {
 	out := &gen.QueryURLTestResponse{}
 	results := URLReporter.Results()
 	for _, r := range results {
@@ -276,7 +302,7 @@ func (s *server) QueryURLTest(_ context.Context, in *gen.EmptyReq) (*gen.QueryUR
 	return out, nil
 }
 
-func (s *server) QueryStats(_ context.Context, in *gen.EmptyReq) (*gen.QueryStatsResp, error) {
+func (s *server) QueryStats(ctx context.Context, in *gen.EmptyReq) (*gen.QueryStatsResp, error) {
 	out := &gen.QueryStatsResp{}
 	out.Ups = make(map[string]int64)
 	out.Downs = make(map[string]int64)
@@ -313,7 +339,7 @@ func (s *server) QueryStats(_ context.Context, in *gen.EmptyReq) (*gen.QueryStat
 	return out, nil
 }
 
-func (s *server) ListConnections(_ context.Context, in *gen.EmptyReq) (*gen.ListConnectionsResp, error) {
+func (s *server) ListConnections(ctx context.Context, in *gen.EmptyReq) (*gen.ListConnectionsResp, error) {
 	out := &gen.ListConnectionsResp{}
 	if boxInstance == nil {
 		return out, nil
@@ -352,7 +378,7 @@ func (s *server) ListConnections(_ context.Context, in *gen.EmptyReq) (*gen.List
 	return out, nil
 }
 
-func (s *server) IsPrivileged(_ context.Context, in *gen.EmptyReq) (*gen.IsPrivilegedResponse, error) {
+func (s *server) IsPrivileged(ctx context.Context, in *gen.EmptyReq) (*gen.IsPrivilegedResponse, error) {
 	out := &gen.IsPrivilegedResponse{}
 	if runtime.GOOS == "windows" {
 		out.HasPrivilege = To(false)
@@ -363,7 +389,7 @@ func (s *server) IsPrivileged(_ context.Context, in *gen.EmptyReq) (*gen.IsPrivi
 	return out, nil
 }
 
-func (s *server) SpeedTest(_ context.Context, in *gen.SpeedTestRequest) (*gen.SpeedTestResponse, error) {
+func (s *server) SpeedTest(ctx context.Context, in *gen.SpeedTestRequest) (*gen.SpeedTestResponse, error) {
 	out := &gen.SpeedTestResponse{}
 	if !*in.TestDownload && !*in.TestUpload && !*in.SimpleDownload && !*in.OnlyCountry {
 		return nil, errors.New("cannot run empty test")
@@ -431,7 +457,7 @@ func (s *server) SpeedTest(_ context.Context, in *gen.SpeedTestRequest) (*gen.Sp
 	return out, nil
 }
 
-func (s *server) QuerySpeedTest(_ context.Context, in *gen.EmptyReq) (*gen.QuerySpeedTestResponse, error) {
+func (s *server) QuerySpeedTest(ctx context.Context, in *gen.EmptyReq) (*gen.QuerySpeedTestResponse, error) {
 	out := &gen.QuerySpeedTestResponse{}
 	res, isRunning := SpTQuerier.Result()
 	errStr := ""
@@ -452,7 +478,7 @@ func (s *server) QuerySpeedTest(_ context.Context, in *gen.EmptyReq) (*gen.Query
 	return out, nil
 }
 
-func (s *server) QueryCountryTest(_ context.Context, in *gen.EmptyReq) (*gen.QueryCountryTestResponse, error) {
+func (s *server) QueryCountryTest(ctx context.Context, in *gen.EmptyReq) (*gen.QueryCountryTestResponse, error) {
 	out := &gen.QueryCountryTestResponse{}
 	results := CountryResults.Results()
 	for _, res := range results {
@@ -474,29 +500,86 @@ func (s *server) QueryCountryTest(_ context.Context, in *gen.EmptyReq) (*gen.Que
 	return out, nil
 }
 
-func (s *server) Clash2Singbox(_ context.Context, in *gen.Clash2SingboxRequest) (out *gen.Clash2SingboxResponse, _ error) {
-	out = &gen.Clash2SingboxResponse{}
-	var convErr error
-
-	defer func() {
-		if convErr != nil {
-			out.Error = To(convErr.Error())
+func (s *server) IPTest(ctx context.Context, in *gen.IPTestRequest) (*gen.IPTestResp, error) {
+	var testInstance *boxbox.Box
+	var xrayTestInstance *core.Instance
+	var cancel context.CancelFunc
+	var err error
+	if *in.NeedXray {
+		xrayTestInstance, err = xray.CreateXrayInstance(*in.XrayConfig)
+		if err != nil {
+			return nil, err
 		}
-	}()
-
-	c := clash.Clash{}
-	err := yaml.Unmarshal([]byte(*in.ClashConfig), &c)
+		err = xrayTestInstance.Start()
+		if err != nil {
+			return nil, err
+		}
+		defer func() {
+			common.Must(xrayTestInstance.Close())
+		}()
+	}
+	testInstance, cancel, err = boxmain.Create([]byte(*in.Config))
 	if err != nil {
-		return
+		return nil, err
+	}
+	defer testInstance.CloseWithTimeout(cancel, 2*time.Second, log.Println, false)
+
+	outboundTags := in.OutboundTags
+	if *in.UseDefaultOutbound {
+		outbound := testInstance.Outbound().Default()
+		outboundTags = []string{outbound.Tag()}
 	}
 
-	sing, convErr := convert.Clash2sing(c, model.SINGLATEST)
-
-	outb, err := json.Marshal(map[string]any{"outbounds": sing})
-	if err != nil {
-		return
+	maxConcurrency := *in.MaxConcurrency
+	if maxConcurrency >= 500 || maxConcurrency == 0 {
+		maxConcurrency = MaxConcurrentTests
 	}
+	timeout := time.Duration(*in.TestTimeoutMs) * time.Millisecond
+	results := BatchIPTest(testCtx, testInstance, outboundTags, int(maxConcurrency), timeout)
 
-	out.SingboxConfig = To(string(outb))
+	res := make([]*gen.IPTestRes, 0, len(results))
+	for idx, data := range results {
+		errStr := ""
+		if data.Error != nil {
+			errStr = data.Error.Error()
+		}
+		tag := outboundTags[idx]
+		res = append(res, &gen.IPTestRes{
+			OutboundTag: To(tag),
+			Ip:          To(data.Result.IP),
+			CountryCode: To(data.Result.CountryCode),
+			Error:       To(errStr),
+		})
+	}
+	return &gen.IPTestResp{Results: res}, nil
+}
+
+func (s *server) QueryIPTest(ctx context.Context, in *gen.EmptyReq) (out *gen.QueryIPTestResponse, _ error) {
+	results := IPReporter.Results()
+	out = &gen.QueryIPTestResponse{}
+	for _, r := range results {
+		errStr := ""
+		if r.Error != nil {
+			errStr = r.Error.Error()
+		}
+		out.Results = append(out.Results, &gen.IPTestRes{
+			OutboundTag: To(r.Tag),
+			Ip:          To(r.Result.IP),
+			CountryCode: To(r.Result.CountryCode),
+			Error:       To(errStr),
+		})
+	}
 	return
+}
+
+func (s *server) GenWgKeyPair(ctx context.Context, _ *gen.EmptyReq) (out *gen.GenWgKeyPairResponse, _ error) {
+	var res gen.GenWgKeyPairResponse
+	privateKey, err := wg.GeneratePrivateKey()
+	if err != nil {
+		res.Error = To(err.Error())
+		return &res, nil
+	}
+	res.PrivateKey = To(privateKey.String())
+	res.PublicKey = To(privateKey.PublicKey().String())
+	return &res, nil
 }

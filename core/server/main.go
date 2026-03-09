@@ -1,8 +1,8 @@
 package main
 
 import (
-	"Core/gen"
-	"Core/internal/boxmain"
+	"ThroneCore/gen"
+	"ThroneCore/internal/boxmain"
 	"context"
 	"flag"
 	"fmt"
@@ -17,14 +17,22 @@ import (
 	"syscall"
 	"time"
 
-	_ "Core/internal/distro/all"
+	_ "ThroneCore/internal/distro/all"
 	C "github.com/sagernet/sing-box/constant"
 )
 
 func RunCore() {
 	_port := flag.Int("port", 19810, "")
 	_debug := flag.Bool("debug", false, "")
+	_version := flag.Bool("version", false, "")
 	flag.CommandLine.Parse(os.Args[1:])
+
+	if *_version {
+		fmt.Printf("sing-box: %s\n", C.Version)
+		fmt.Printf("Xray-core: %s\n", core.Version())
+		os.Exit(0)
+	}
+
 	debug = *_debug
 
 	go func() {

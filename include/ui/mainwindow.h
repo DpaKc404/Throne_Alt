@@ -178,6 +178,7 @@ private:
     QTextDocument *qvLogDocument = new QTextDocument(this);
     //
     QString title_error;
+    QString core_version_suffix;
     int icon_status = -1;
     std::shared_ptr<Configs::ProxyEntity> running;
     QString traffic_update_cache;

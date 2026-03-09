@@ -78,14 +78,8 @@ namespace Subscription {
             return;
         }
 
-        // Clash
+        // Clash format is no longer supported (Clash2Singbox removed)
         if (str.contains("proxies:")) {
-            bool ok;
-            QString resp = API::defaultClient->Clash2Singbox(&ok, str);
-            if (ok && !resp.isEmpty())
-            {
-                updateSingBox(resp);
-            }
             return;
         }
 
@@ -427,18 +421,16 @@ namespace Subscription {
         // 网络请求
         if (asURL) {
             auto groupName = group == nullptr ? content : group->name;
-            MW_show_log(">>>>>>>> " + QObject::tr("Requesting subscription: %1").arg(groupName));
+            MW_show_log(QObject::tr("Updating: %1").arg(groupName));
 
             auto resp = NetworkRequestHelper::HttpGet(content, Configs::dataStore->sub_send_hwid);
             if (!resp.error.isEmpty()) {
-                MW_show_log("<<<<<<<< " + QObject::tr("Requesting subscription %1 error: %2").arg(groupName, resp.error + "\n" + resp.data));
+                MW_show_log(QObject::tr("Error %1: %2").arg(groupName, resp.error));
                 return;
             }
 
             content = resp.data;
             sub_user_info = NetworkRequestHelper::GetHeader(resp.header, "Subscription-UserInfo");
-
-            MW_show_log("<<<<<<<< " + QObject::tr("Subscription request fininshed: %1").arg(groupName));
         }
 
         QList<std::shared_ptr<Configs::ProxyEntity>> in;          // 更新前
@@ -461,10 +453,8 @@ namespace Subscription {
             }
         }
 
-        MW_show_log(">>>>>>>> " + QObject::tr("Processing subscription data..."));
         rawUpdater->update(content);
         Configs::profileManager->AddProfileBatch(rawUpdater->updated_order, rawUpdater->gid_add_to);
-        MW_show_log(">>>>>>>> " + QObject::tr("Process complete, applying..."));
 
         if (group != nullptr) {
             out_all = group->GetProfileEnts();
@@ -535,7 +525,7 @@ namespace Subscription {
                 if (only_out.length() + only_in.length() == 0) change_text = QObject::tr("Nothing");
             }
 
-            MW_show_log("<<<<<<<< " + QObject::tr("Change of %1:").arg(group->name) + "\n" + change_text);
+            MW_show_log(QObject::tr("Done %1:").arg(group->name) + " " + change_text.trimmed());
             MW_dialog_message("SubUpdater", "finish-dingyue");
         } else {
             Configs::dataStore->imported_count = rawUpdater->updated_order.count();
