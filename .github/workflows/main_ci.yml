@@ -158,6 +158,7 @@ jobs:
         if: matrix.os_label == 'windows' && steps.cache-win-deps.outputs.cache-hit != 'true'
         shell: cmd
         run: |
+          set VCPKG_ROOT=%VCPKG_INSTALLATION_ROOT%
           echo VCPKG_ROOT=%VCPKG_INSTALLATION_ROOT%>> %GITHUB_ENV%
           vcpkg install openssl:x64-windows-static
           call .\script\build_qt_static_windows.bat ${{ env.QT_VERSION }}
