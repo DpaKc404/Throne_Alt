@@ -135,13 +135,27 @@ jobs:
           key: ccache-${{ matrix.os_label }}-${{ github.sha }}
           restore-keys: ccache-${{ matrix.os_label }}-
 
-      # ── Qt ─────────────────────────────────────────────────────────────
-      - name: Install Qt
+      # ── Qt (platform-specific) ─────────────────────────────────────────
+      - name: Install Qt (Linux)
+        if: matrix.os_label == 'linux'
         uses: jurplel/install-qt-action@v4.3.0
         with:
           version: ${{ env.QT_VERSION }}
           cache: true
-          cache-key-prefix: qt-${{ matrix.os_label }}
+          cache-key-prefix: qt-linux
+
+      - name: Cache static Qt (Windows)
+        if: matrix.os_label == 'windows'
+        id: cache-win-qt
+        uses: actions/cache@v4.2.3
+        with:
+          path: qt6/build
+          key: win-qt-static-${{ env.QT_VERSION }}-${{ hashFiles('script/build_qt_static_windows.bat') }}
+
+      - name: Build static Qt (Windows)
+        if: matrix.os_label == 'windows' && steps.cache-win-qt.outputs.cache-hit != 'true'
+        shell: cmd
+        run: call .\script\build_qt_static_windows.bat ${{ env.QT_VERSION }}
 
       # ── Configure, Build, Deploy ───────────────────────────────────────
       - name: Build Throne
@@ -157,7 +171,9 @@ jobs:
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           )
 
-          if [[ "${{ matrix.os_label }}" != "windows" ]]; then
+          if [[ "${{ matrix.os_label }}" == "windows" ]]; then
+            export CMAKE_PREFIX_PATH="$PWD/../qt6/build/lib/cmake"
+          else
             CMAKE_ARGS+=(-DCMAKE_EXE_LINKER_FLAGS="-static-libgcc -static-libstdc++")
           fi
 

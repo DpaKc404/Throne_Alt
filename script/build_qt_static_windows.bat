@@ -3,12 +3,12 @@ cd qt6
 
 git switch %1
 mkdir build
-CALL .\configure.bat -no-schannel -openssl-linked -no-dtls -no-ocsp -release -static -platform win32-msvc -prefix ./build -static-runtime -submodules qtbase,qtimageformats,qtsvg,qttranslations -skip tests -skip examples -gui -widgets -init-submodules -- -D OPENSSL_ROOT_DIR="%VCPKG_ROOT%/installed/x64-windows-static"
+CALL .\configure.bat -schannel -no-openssl -release -static -platform win32-msvc -prefix ./build -static-runtime -submodules qtbase,qtimageformats,qtsvg,qttools,qttranslations -skip tests -skip examples -gui -widgets -init-submodules
 echo on branch %1
 echo config complete, building...
 cmake --build . --parallel
-echo build one, installing...
-ninja install
+echo build done, installing...
+cmake --install .
 echo installed Qt %1 in static mode
 
 cd ..
