@@ -16,6 +16,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/shlex"
@@ -27,6 +28,7 @@ import (
 	"github.com/xtls/xray-core/core"
 )
 
+var instanceMu sync.RWMutex
 var boxInstance *boxbox.Box
 var extraProcess *process.Process
 var needUnsetDNS bool
@@ -46,6 +48,8 @@ func To[T any](v T) *T {
 }
 
 func (s *server) Start(ctx context.Context, in *gen.LoadConfigReq) (out *gen.ErrorResp, _ error) {
+	instanceMu.Lock()
+	defer instanceMu.Unlock()
 	var err error
 
 	defer func() {
@@ -79,11 +83,11 @@ func (s *server) Start(ctx context.Context, in *gen.LoadConfigReq) (out *gen.Err
 				return
 			}
 			_, e = f.WriteString(*in.ExtraProcessConf)
+			_ = f.Close()
 			if e != nil {
 				err = E.Cause(e, "Failed to write extra.conf")
 				return
 			}
-			_ = f.Close()
 			for idx, arg := range args {
 				if strings.Contains(arg, "%s") {
 					args[idx] = fmt.Sprintf(arg, extraConfPath)
@@ -95,6 +99,7 @@ func (s *server) Start(ctx context.Context, in *gen.LoadConfigReq) (out *gen.Err
 		extraProcess = process.NewProcess(*in.ExtraProcessPath, args, *in.ExtraNoOut)
 		err = extraProcess.Start()
 		if err != nil {
+			extraProcess = nil
 			return
 		}
 	}
@@ -163,6 +168,8 @@ func (s *server) Start(ctx context.Context, in *gen.LoadConfigReq) (out *gen.Err
 }
 
 func (s *server) Stop(ctx context.Context, in *gen.EmptyReq) (out *gen.ErrorResp, _ error) {
+	instanceMu.Lock()
+	defer instanceMu.Unlock()
 	var err error
 
 	defer func() {
@@ -218,7 +225,10 @@ func (s *server) Test(ctx context.Context, in *gen.TestReq) (*gen.TestResp, erro
 	var err error
 	var twice = true
 	if *in.TestCurrent {
-		if boxInstance == nil {
+		instanceMu.RLock()
+		testInstance = boxInstance
+		instanceMu.RUnlock()
+		if testInstance == nil {
 			out.Results = []*gen.URLTestResp{{
 				OutboundTag: To("proxy"),
 				LatencyMs:   To(int32(0)),
@@ -226,7 +236,6 @@ func (s *server) Test(ctx context.Context, in *gen.TestReq) (*gen.TestResp, erro
 			}}
 			return out, nil
 		}
-		testInstance = boxInstance
 		twice = false
 	} else {
 		if *in.NeedXray {
@@ -306,20 +315,23 @@ func (s *server) QueryStats(ctx context.Context, in *gen.EmptyReq) (*gen.QuerySt
 	out := &gen.QueryStatsResp{}
 	out.Ups = make(map[string]int64)
 	out.Downs = make(map[string]int64)
-	if boxInstance != nil {
-		clash := service.FromContext[adapter.ClashServer](boxInstance.Context())
+	instanceMu.RLock()
+	bi := boxInstance
+	instanceMu.RUnlock()
+	if bi != nil {
+		clash := service.FromContext[adapter.ClashServer](bi.Context())
 		if clash != nil {
 			cApi, ok := clash.(*clashapi.Server)
 			if !ok {
 				log.Println("Failed to assert clash server")
 				return nil, E.New("invalid clash server type")
 			}
-			outbounds := service.FromContext[adapter.OutboundManager](boxInstance.Context())
+			outbounds := service.FromContext[adapter.OutboundManager](bi.Context())
 			if outbounds == nil {
 				log.Println("Failed to get outbound manager")
 				return nil, E.New("nil outbound manager")
 			}
-			endpoints := service.FromContext[adapter.EndpointManager](boxInstance.Context())
+			endpoints := service.FromContext[adapter.EndpointManager](bi.Context())
 			if endpoints == nil {
 				log.Println("Failed to get endpoint manager")
 				return nil, E.New("nil endpoint manager")
@@ -341,13 +353,16 @@ func (s *server) QueryStats(ctx context.Context, in *gen.EmptyReq) (*gen.QuerySt
 
 func (s *server) ListConnections(ctx context.Context, in *gen.EmptyReq) (*gen.ListConnectionsResp, error) {
 	out := &gen.ListConnectionsResp{}
-	if boxInstance == nil {
+	instanceMu.RLock()
+	bi := boxInstance
+	instanceMu.RUnlock()
+	if bi == nil {
 		return out, nil
 	}
-	if service.FromContext[adapter.ClashServer](boxInstance.Context()) == nil {
+	if service.FromContext[adapter.ClashServer](bi.Context()) == nil {
 		return nil, errors.New("no clash server found")
 	}
-	clash, ok := service.FromContext[adapter.ClashServer](boxInstance.Context()).(*clashapi.Server)
+	clash, ok := service.FromContext[adapter.ClashServer](bi.Context()).(*clashapi.Server)
 	if !ok {
 		return nil, errors.New("invalid state, should not be here")
 	}
@@ -400,14 +415,16 @@ func (s *server) SpeedTest(ctx context.Context, in *gen.SpeedTestRequest) (*gen.
 	outboundTags := in.OutboundTags
 	var err error
 	if *in.TestCurrent {
-		if boxInstance == nil {
+		instanceMu.RLock()
+		testInstance = boxInstance
+		instanceMu.RUnlock()
+		if testInstance == nil {
 			out.Results = []*gen.SpeedTestResult{{
 				OutboundTag: To("proxy"),
 				Error:       To("Instance is not running"),
 			}}
 			return out, nil
 		}
-		testInstance = boxInstance
 	} else {
 		if *in.NeedXray {
 			xrayTestIntance, err = xray.CreateXrayInstance(*in.XrayConfig)

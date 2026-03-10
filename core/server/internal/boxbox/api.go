@@ -20,9 +20,7 @@ func (s *Box) CloseWithTimeout(cancal context.CancelFunc, d time.Duration, logFu
 		cancel()
 		closer.Close()
 		close(done)
-		if !t.Stop() {
-			printCloseTime()
-		}
+		t.Stop()
 	}(cancal, s)
 
 	select {
@@ -35,6 +33,9 @@ func (s *Box) CloseWithTimeout(cancal context.CancelFunc, d time.Duration, logFu
 			}
 		}
 	case <-done:
+		if !t.Stop() {
+			<-t.C
+		}
 		printCloseTime()
 	}
 }

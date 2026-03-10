@@ -87,6 +87,8 @@ func (s *SpeedTestResultQuerier) storeResult(result *SpeedTestResult) {
 }
 
 func (s *SpeedTestResultQuerier) setIsRunning(isRunning bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.isRunning = isRunning
 }
 

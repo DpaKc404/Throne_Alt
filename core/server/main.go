@@ -13,6 +13,7 @@ import (
 	"os"
 	"runtime"
 	runtimeDebug "runtime/debug"
+	"runtime/metrics"
 	"strconv"
 	"syscall"
 	"time"
@@ -83,11 +84,12 @@ func main() {
 	fmt.Println()
 	runtimeDebug.SetMemoryLimit(2 * 1024 * 1024 * 1024) // 2GB
 	go func() {
-		var memStats runtime.MemStats
+		sample := []metrics.Sample{{Name: "/memory/classes/heap/objects:bytes"}}
 		for {
-			time.Sleep(2 * time.Second)
-			runtime.ReadMemStats(&memStats)
-			if memStats.HeapAlloc > 1.5*1024*1024*1024 {
+			time.Sleep(5 * time.Second)
+			metrics.Read(sample)
+			if sample[0].Value.Kind() == metrics.KindUint64 &&
+				sample[0].Value.Uint64() > 1.5*1024*1024*1024 {
 				// too much memory for sing-box, crash
 				panic("Memory has reached 1.5 GB, this is not normal")
 			}
