@@ -1,4 +1,4 @@
-name: Throne build matrix
+name: Neko Throne build matrix
 on:
   workflow_dispatch:
     inputs:
@@ -8,6 +8,9 @@ on:
       publish:
         description: "r for normal release, p for prerelease, leave empty to not publish anything"
         required: false
+  push:
+    branches:
+      - "08/03/2026_EXPEREMENTAL"
 jobs:
   build-go:
     permissions:
@@ -86,7 +89,7 @@ jobs:
       - name: Uploading Artifact
         uses: actions/upload-artifact@v4.6.2
         with:
-          name: Throne-${{ github.sha }}-Common-${{ matrix.cross_os }}-${{ matrix.cross_arch }}
+          name: NekoThrone-${{ github.sha }}-Common-${{ matrix.cross_os }}-${{ matrix.cross_arch }}
           path: artifacts.tgz
   build-cpp:
     permissions:
@@ -295,7 +298,7 @@ jobs:
       - name: Uploading Artifact
         uses: actions/upload-artifact@v4.6.2
         with:
-          name: Throne-${{ github.sha }}-${{ matrix.platform }}-${{ matrix.target }}-Qt${{ matrix.qt_version }}
+          name: NekoThrone-${{ github.sha }}-${{ matrix.platform }}-${{ matrix.target }}-Qt${{ matrix.qt_version }}
           path: artifacts.tgz
   publish:
     name: Pack & Publish Release
@@ -306,7 +309,7 @@ jobs:
       contents: write
       actions: read
     env:
-      INPUT_VERSION: ${{ github.event.inputs.tag }}
+      INPUT_VERSION: ${{ github.event.inputs.tag || format('nightly-{0}', github.run_number) }}
     steps:
       - name: Checking out sources
         uses: actions/checkout@v4.2.2
@@ -414,3 +417,9 @@ jobs:
         if: github.event.inputs.publish == 'r'
         run: |
           ./ghr -delete -c ${{ github.sha }} -t "${{ github.token }}" -n "${{ github.event.inputs.tag }}" "${{ github.event.inputs.tag }}" deployment
+      - name: Auto Release (branch push)
+        if: github.event_name == 'push'
+        env:
+          NIGHTLY_TAG: nightly-${{ github.run_number }}
+        run: |
+          ./ghr -prerelease -delete -c ${{ github.sha }} -t "${{ github.token }}" -n "Neko Throne $NIGHTLY_TAG" "$NIGHTLY_TAG" deployment

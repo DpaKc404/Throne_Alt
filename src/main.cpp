@@ -128,7 +128,7 @@ int main(int argc, char* argv[]) {
     // dirs & clean
     auto wd = QDir(QApplication::applicationDirPath());
     if (Configs::dataStore->flag_use_appdata) {
-        QApplication::setApplicationName("Throne");
+        QApplication::setApplicationName("Neko Throne");
         if (!Configs::dataStore->appdataDir.isEmpty()) {
             wd.setPath(Configs::dataStore->appdataDir);
         } else {

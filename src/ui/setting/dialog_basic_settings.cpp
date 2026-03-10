@@ -9,7 +9,6 @@
 #include "include/global/HTTPRequestHelper.hpp"
 #include "include/global/DeviceDetailsHelper.hpp"
 
-#include <QStyleFactory>
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QMessageBox>
@@ -117,7 +116,7 @@ DialogBasicSettings::DialogBasicSettings(QWidget *parent)
         adjustSize();
     });
     //
-    ui->theme->addItems(QStyleFactory::keys());
+    ui->theme->addItem("System");
     ui->enable_custom_icon->setChecked(Configs::dataStore->use_custom_icons);
     connect(ui->select_custom_icon, &QPushButton::clicked, this, [=, this] {
         auto n = QMessageBox::information(this, tr("Custom Icon Manual"), tr(Configs::Information::CustomIconManual.toStdString().c_str()), QMessageBox::Open | QMessageBox::Cancel);
