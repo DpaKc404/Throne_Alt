@@ -143,14 +143,6 @@ jobs:
           ninja
           cd ..
           ./script/deploy_windows.sh
-      - name: Build Installer with NSIS
-        shell: cmd
-        if: matrix.platform == 'windows-latest'
-        run: |
-          choco install nsis
-          cp .\script\windows_installer.nsi .
-          "C:\Program Files (x86)\NSIS\makensis.exe" windows_installer.nsi
-          cp Neko_ThroneSetup.exe deployment/
       - name: Linux - Generate MakeFile and Build
         shell: bash
         if: matrix.platform == 'ubuntu-22.04'
@@ -207,7 +199,6 @@ jobs:
           zip -9 -r $version_standalone-linux-amd64.zip Throne
           rm -rf Throne
           ####
-          mv Neko_ThroneSetup.exe $version_standalone-windows64-installer.exe
           mv windows64 Throne
           find Throne -maxdepth 1 -name "*.pdb" | head -1 | xargs -I{} mv {} debug/$version_standalone-windows64.pdb 2>/dev/null || true
           zip -9 -r $version_standalone-windows64.zip Throne
