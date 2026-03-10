@@ -242,7 +242,7 @@ jobs:
           choco install nsis
           cp .\script\windows_installer.nsi .
           "C:\Program Files (x86)\NSIS\makensis.exe" windows_installer.nsi
-          cp ThroneSetup.exe deployment/
+          cp Neko_ThroneSetup.exe deployment/
       - name: Linux - Generate MakeFile and Build
         shell: bash
         if: contains( matrix.platform, 'ubuntu' ) && matrix.qt_version != '6.2.0'
@@ -332,18 +332,18 @@ jobs:
           rm -rf Throne
           ####
           mv linux-amd64 Throne
-          mv Throne/Throne.debug debug/$version_standalone-linux-amd64.debug
+          mv Throne/Neko_Throne.debug debug/$version_standalone-linux-amd64.debug 2>/dev/null || mv Throne/Throne.debug debug/$version_standalone-linux-amd64.debug 2>/dev/null || true
           zip -9 -r $version_standalone-linux-amd64.zip Throne
           rm -rf Throne
           ####
           mv linux-arm64 Throne
-          mv Throne/Throne.debug debug/$version_standalone-linux-arm64.debug
+          mv Throne/Neko_Throne.debug debug/$version_standalone-linux-arm64.debug 2>/dev/null || mv Throne/Throne.debug debug/$version_standalone-linux-arm64.debug 2>/dev/null || true
           zip -9 -r $version_standalone-linux-arm64.zip Throne
           rm -rf Throne
           ####
-          mv ThroneSetup.exe $version_standalone-windows64-installer.exe
+          mv Neko_ThroneSetup.exe $version_standalone-windows64-installer.exe
           mv windows64 Throne
-          mv Throne/Throne.pdb debug/$version_standalone-windows64.pdb
+          find Throne -maxdepth 1 -name "*.pdb" | head -1 | xargs -I{} mv {} debug/$version_standalone-windows64.pdb 2>/dev/null || true
           zip -9 -r $version_standalone-windows64.zip Throne
           rm -rf Throne
           ####

@@ -25,9 +25,9 @@ chown root:root /opt/Throne/NekoCore 2>/dev/null && chmod u+s /opt/Throne/NekoCo
 
 cat >/usr/share/applications/Throne.desktop<<-END
 [Desktop Entry]
-Name=Throne
+Name=Neko Throne
 Comment=Qt based cross-platform GUI proxy configuration manager (backend: sing-box)
-Exec=sh -c "PATH=/opt/Throne:\$PATH /opt/Throne/Throne -appdata"
+Exec=sh -c "PATH=/opt/Throne:\$PATH /opt/Throne/Neko_Throne -appdata"
 Icon=/opt/Throne/Throne.png
 Terminal=false
 Type=Application

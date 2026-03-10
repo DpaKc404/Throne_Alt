@@ -13,7 +13,7 @@ rm -rf $DEST
 mkdir -p $DEST
 
 #### copy binary ####
-cp $BUILD/Throne $DEST
+cp $BUILD/Neko_Throne $DEST
 
 #### copy Throne.png ####
 cp ./res/public/Throne.png $DEST
@@ -27,6 +27,6 @@ cp deployment/linux-$ARCH/NekoCore $DEST
 rm -rf deployment/linux-$ARCH
 
 # handle debug info
-objcopy --only-keep-debug $DEST/Throne $DEST/Throne.debug
-strip --strip-debug --strip-unneeded $DEST/Throne
-objcopy --add-gnu-debuglink=$DEST/Throne.debug $DEST/Throne
+objcopy --only-keep-debug $DEST/Neko_Throne $DEST/Neko_Throne.debug
+strip --strip-debug --strip-unneeded $DEST/Neko_Throne
+objcopy --add-gnu-debuglink=$DEST/Neko_Throne.debug $DEST/Neko_Throne

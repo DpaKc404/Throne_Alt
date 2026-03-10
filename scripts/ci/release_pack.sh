@@ -44,9 +44,18 @@ fi
 # ─── Resolve env ──────────────────────────────────────────────────────────────
 source script/env_deploy.sh
 
-# Extract all downloaded artifacts
-echo ">> Extracting build artifacts..."
-find . -name artifacts.tgz -exec tar xvzf {} \;
+# Assemble deployment/ from artifacts downloaded by actions/download-artifact.
+# Structure after download: download-artifact/NekoThrone-<os>-amd64/<dirs>/...
+echo ">> Assembling deployment from downloaded artifacts..."
+mkdir -p deployment
+for _adir in download-artifact/NekoThrone-*/; do
+    if [[ -d "${_adir}" ]]; then
+        echo ">> Merging ${_adir} -> deployment/"
+        cp -r "${_adir}." deployment/
+    fi
+done
+
+version_standalone="NekoThrone-${INPUT_VERSION}"
 
 cd deployment
 mkdir -p debug
@@ -63,7 +72,8 @@ echo ""
 echo ">> Packing Linux amd64..."
 if [[ -d linux-amd64 ]]; then
     mv linux-amd64 Throne
-    mv Throne/Throne.debug "debug/${version_standalone}-linux-amd64.debug"
+    mv Throne/Neko_Throne.debug "debug/${version_standalone}-linux-amd64.debug" 2>/dev/null || \
+        mv Throne/Throne.debug "debug/${version_standalone}-linux-amd64.debug" 2>/dev/null || true
     zip -9 -r "${version_standalone}-linux-amd64.zip" Throne
     rm -rf Throne
 else
@@ -75,7 +85,9 @@ echo ""
 echo ">> Packing Windows 64-bit..."
 if [[ -d windows64 ]]; then
     mv windows64 Throne
-    mv Throne/Throne.pdb "debug/${version_standalone}-windows64.pdb" || true
+    # Support both old (Throne.pdb) and new (Neko_Throne.pdb) executable names
+    find Throne -maxdepth 1 -name "*.pdb" | head -1 | \
+        xargs -I{} mv {} "debug/${version_standalone}-windows64.pdb" 2>/dev/null || true
     zip -9 -r "${version_standalone}-windows64.zip" Throne
     rm -rf Throne
 else

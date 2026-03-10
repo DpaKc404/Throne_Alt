@@ -368,6 +368,7 @@ if (APPLE)
 endif ()
 
 set_target_properties(Throne PROPERTIES
+        OUTPUT_NAME "Neko_Throne"
         MACOSX_BUNDLE_ICON_FILE "Throne.icns"
         RESOURCE ${MACOSX_ICON}
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/res/MacOSXBundleInfo.plist

@@ -7,7 +7,7 @@ rm -rf $DEST
 mkdir -p $DEST
 
 #### copy exe ####
-cp $BUILD/Throne.exe $DEST
+cp $BUILD/Neko_Throne.exe $DEST
 
 cd download-artifact
 cd *windows-arm64
@@ -16,7 +16,7 @@ cd ../..
 
 #### deploy qt & DLL runtime ####
 pushd $DEST
-windeployqt Throne.exe --no-translations --no-system-d3d-compiler --no-opengl-sw --no-svg --verbose 2
+windeployqt Neko_Throne.exe --no-translations --no-system-d3d-compiler --no-opengl-sw --no-svg --verbose 2
 popd
 
 rm -rf $DEST/dxcompiler.dll $DEST/dxil.dll

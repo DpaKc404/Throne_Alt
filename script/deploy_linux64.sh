@@ -15,7 +15,7 @@ rm -rf $DEST
 mkdir -p $DEST
 
 #### copy binary ####
-cp $BUILD/Throne $DEST
+cp $BUILD/Neko_Throne $DEST
 
 #### copy translations to lang/ ####
 if [ -d "$BUILD/lang" ]; then
@@ -40,7 +40,7 @@ chmod +x linuxdeploy-$ARCH1.AppImage linuxdeploy-plugin-qt-$ARCH1.AppImage
 
 export EXTRA_QT_PLUGINS="iconengines;wayland-shell-integration;wayland-decoration-client"
 export EXTRA_PLATFORM_PLUGINS="libqwayland.so"
-./linuxdeploy-$ARCH1.AppImage --appdir $DEST --executable $DEST/Throne --desktop-file $SRC_ROOT/res/public/Throne.desktop --icon-file $DEST/Throne.png --plugin qt 2>&1 | grep -v 'WARNING: Could not find copyright' | grep -v 'WARNING: Not calling strip' | grep -v 'WARNING: Using deprecated' || true
+./linuxdeploy-$ARCH1.AppImage --appdir $DEST --executable $DEST/Neko_Throne --desktop-file $SRC_ROOT/res/public/Throne.desktop --icon-file $DEST/Throne.png --plugin qt 2>&1 | grep -v 'WARNING: Could not find copyright' | grep -v 'WARNING: Not calling strip' | grep -v 'WARNING: Using deprecated' || true
 rm linuxdeploy-$ARCH1.AppImage linuxdeploy-plugin-qt-$ARCH1.AppImage
 cd $DEST
 rm -r ./usr/translations ./usr/bin ./usr/share ./apprun-hooks
@@ -71,9 +71,9 @@ mv ./usr/lib2 ./usr/lib
 
 # fix lib rpath
 cd $DEST
-patchelf --set-rpath '$ORIGIN/usr/lib' ./Throne
+patchelf --set-rpath '$ORIGIN/usr/lib' ./Neko_Throne
 
 # handle debug info
-objcopy --only-keep-debug $DEST/Throne $DEST/Throne.debug
-strip --strip-debug --strip-unneeded $DEST/Throne
-objcopy --add-gnu-debuglink=$DEST/Throne.debug $DEST/Throne
+objcopy --only-keep-debug $DEST/Neko_Throne $DEST/Neko_Throne.debug
+strip --strip-debug --strip-unneeded $DEST/Neko_Throne
+objcopy --add-gnu-debuglink=$DEST/Neko_Throne.debug $DEST/Neko_Throne
